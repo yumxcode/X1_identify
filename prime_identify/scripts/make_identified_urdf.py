@@ -1,4 +1,8 @@
-"""Generate the identified URDF from the identification results.
+"""Generate the GRF-mass-repaired URDF (NOT a parameter identification output).
+
+This is a model REPAIR artifact: physically-consistent projection of the
+nominal inertias + total-mass anchoring to the GRF estimate. It contains
+NO identified inertia parameters until the estimator passes its gate.
 
 Changes applied (deltas relative to the raw URDF):
   1. physical-consistency repair of ALL bodies (the SolidWorks-exported
@@ -8,7 +12,7 @@ Changes applied (deltas relative to the raw URDF):
      (walk_diag contact solving: mean sum(Fz) = m_total * g, verified to
      0.1% on a synthetic static test)
 
-Output: results/x1_identified.urdf
+Output: results/x1_gmass_repair.urdf
 """
 import sys
 import xml.etree.ElementTree as ET
@@ -20,7 +24,7 @@ sys.path.insert(0, "/Users/yumx/code/robot_x/X1/X1_辨识/prime_identify")
 from prime.dynamics import X1Dynamics, _inertia_to_vec6
 
 URDF_IN = "/Users/yumx/code/robot_x/X1/X1_辨识/X1_train/resources/robots/x1/urdf/x1.urdf"
-URDF_OUT = "/Users/yumx/code/robot_x/X1/X1_辨识/prime_identify/results/x1_identified.urdf"
+URDF_OUT = "/Users/yumx/code/robot_x/X1/X1_辨识/prime_identify/results/x1_gmass_repair.urdf"
 GRF_TOTAL_MASS = 37.10  # kg, from run_real_walk.py (mean GRF sum / g)
 NOMINAL_TOTAL = 35.323
 
