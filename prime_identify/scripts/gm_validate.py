@@ -1,17 +1,22 @@
-"""Remote (gradmotion) validation of the X1 identification pipeline.
+"""Remote (gradmotion) AND local validation of the X1 identification results.
 
-Runs on the gm platform (ubuntu:22.04 + pip). Validates:
-  [G3] physical consistency of nominal and repaired URDFs
-  [G4] GRF-balance total-mass estimate reproduction (subsampled)
+Runs identically in both environments (deps: pinocchio, numpy). Validates:
+  [G3] physical consistency of the nominal and mass-anchored URDFs using the
+       CORRECT origin-inertia convention (pc_min_eig_params; see
+       prime/dynamics.py for the convention adjudication)
+  [G4] GRF-balance total-mass estimate (same fixed seed/frames locally and
+       remotely for an apples-to-apples comparison)
 
-Writes PASS/FAIL per item to stdout and a JSON summary.
+Writes a JSON summary to prime_identify/results/gm_validation.json.
 """
 import json
 import os
 import subprocess
 import sys
 
-REPO = "/workspace/X1_identify" if os.path.isdir("/workspace/X1_identify") else os.getcwd()
+REPO = os.environ.get("X1_VALIDATION_ROOT") or (
+    "/workspace/X1_identify" if os.path.isdir("/workspace/X1_identify") else os.getcwd()
+)
 
 
 def sh(cmd):
@@ -19,46 +24,55 @@ def sh(cmd):
     subprocess.run(cmd, shell=True, check=True)
 
 
+def ensure_deps():
+    try:
+        import pinocchio  # noqa: F401
+
+        return
+    except ImportError:
+        pass
+    # pip builds fail on this image; conda-forge ships prebuilt wheels
+    sh("conda install -y -c conda-forge pinocchio")
+
+
 def main():
-    # deps
-    sh(f"{sys.executable} -m pip install -q pin numpy scipy")
+    ensure_deps()
+    import numpy as np  # noqa: F401
+    import pinocchio as pin
+
     sys.path.insert(0, os.path.join(REPO, "prime_identify"))
+    from prime.dynamics import X1Dynamics, pc_min_eig_origin
+    from prime.data import load_walk_diag
 
     report = {"items": {}}
 
-    # ---------- G3: physical consistency ----------
-    import numpy as np
-    import pinocchio as pin
-    from prime.dynamics import X1Dynamics
-    from prime.log_cholesky import is_physically_consistent
-
+    # ---------- G3: physical consistency (origin convention) ----------
     urdf_nom = os.path.join(REPO, "X1_train/resources/robots/x1/urdf/x1.urdf")
-    urdf_rep = os.path.join(REPO, "prime_identify/results/x1_gmass_repair.urdf")
+    urdf_anc = os.path.join(REPO, "prime_identify/results/x1_gmass_anchored.urdf")
+    if not os.path.exists(urdf_nom):
+        urdf_nom = os.path.join(REPO, "urdf/x1.urdf")  # validate-lite layout
 
-    dyn = X1Dynamics(urdf_nom)
+    model = pin.buildModelFromUrdf(urdf_nom, pin.JointModelFreeFlyer())
     n_bad = sum(
-        0 if is_physically_consistent(
-            np.concatenate([[dyn.pi_urdf[k, 0]], dyn.pi_urdf[k, 1:4],
-                            [dyn.pi_urdf[k, 4], dyn.pi_urdf[k, 6], dyn.pi_urdf[k, 9]],
-                            [dyn.pi_urdf[k, 5], dyn.pi_urdf[k, 8], dyn.pi_urdf[k, 7]]]))
-        else 1
-        for k in range(dyn.pi_urdf.shape[0])
+        1 for j in range(1, model.njoints) if pc_min_eig_origin(model, j) <= 1e-9
     )
-    report["items"]["G3_nominal_pc_violations"] = n_bad  # expected >0 (documented defect)
+    report["items"]["G3_nominal_pc_violations"] = n_bad  # adjudicated: 0
 
-    if os.path.exists(urdf_rep):
-        dyn2 = X1Dynamics(urdf_rep)
+    g3 = False
+    if os.path.exists(urdf_anc):
+        dyn2 = X1Dynamics(urdf_anc)
         err = dyn2.selfcheck()
-        report["items"]["G3_repaired_roundtrip_err"] = err
-        report["items"]["G3_repaired_total_mass"] = round(dyn2.total_mass(), 3)
-        g3 = err < 1e-9
-    else:
-        g3 = False
+        worst = min(
+            pc_min_eig_origin(dyn2.model, j) for j in range(1, dyn2.model.njoints)
+        )
+        report["items"]["G3_anchored_roundtrip_err"] = err
+        report["items"]["G3_anchored_total_mass"] = round(dyn2.total_mass(), 3)
+        report["items"]["G3_anchored_worst_min_eig"] = worst
+        g3 = err < 1e-9 and worst > 0.0
     report["items"]["G3_PASS"] = bool(g3)
 
-    # ---------- G4: GRF mass estimate reproduction ----------
-    from prime.data import load_walk_diag
-
+    # ---------- G4: GRF mass estimate (fixed seed => local==remote) ----------
+    dyn = X1Dynamics(urdf_nom)
     csv_path = os.path.join(REPO, "x1_data/walk_diag_20260824_103222.csv")
     wd = load_walk_diag(csv_path, dyn)
     rng = np.random.default_rng(0)
@@ -71,7 +85,6 @@ def main():
             Fz.append(imp[:, 2].sum() / wd.dt)
     Fz = np.array(Fz)
     m_est = float(Fz.mean() / 9.81)
-    # segmented bootstrap CI
     segs = np.array_split(Fz, 20)
     seg_masses = np.array([s.mean() / 9.81 for s in segs if len(s)])
     ci = [float(np.percentile(seg_masses, 2.5)), float(np.percentile(seg_masses, 97.5))]
