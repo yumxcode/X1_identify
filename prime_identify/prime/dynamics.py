@@ -94,6 +94,26 @@ def _inertia_to_vec6(I: np.ndarray) -> np.ndarray:
     return np.array([I[0, 0], I[0, 1], I[1, 1], I[0, 2], I[1, 2], I[2, 2]])
 
 
+#: symmetric index pairs for the 6-vector inertia (pinocchio order)
+_SYMS = ((0, 0), (0, 1), (1, 1), (0, 2), (1, 2), (2, 2))
+
+
+def make_param_transform(R: np.ndarray) -> np.ndarray:
+    """10x10 matrix B(R) mapping pi expressed in frame A to pi expressed in
+    frame B, where R rotates vectors from A to B (pi_B = B @ pi_A):
+        m' = m,  mc' = R mc,  I_o' = R I_o R^T  (about the origin).
+    Left/right leg links are rotated ~180 deg w.r.t. each other in the X1
+    URDF, so sharing group parameters REQUIRES this transform.
+    """
+    B = np.zeros((10, 10))
+    B[0, 0] = 1.0
+    B[1:4, 1:4] = R
+    for i, (a, b) in enumerate(_SYMS):
+        for j, (c, d) in enumerate(_SYMS):
+            B[4 + i, 4 + j] += R[a, c] * R[b, d]
+    return B
+
+
 def default_identified_bodies(model: pin.Model) -> List[str]:
     """Bodies whose inertias we identify: the floating-base body + all leg
     bodies, with left/right symmetry tying (see build_symmetry)."""
@@ -129,10 +149,16 @@ class X1Dynamics:
         kappa: float = 500.0,
         contact_frames: Optional[Sequence[str]] = None,
         identified_bodies: Optional[List[str]] = None,
-        use_symmetry: bool = True,
+        use_symmetry: bool = False,
         phi_active_thresh: float = 0.015,
     ):
-        """phi_active_thresh: contact gate. PRIME's log-barrier requires phi
+        """use_symmetry: left/right legs are MIRROR-symmetric in the X1 URDF
+        (det(R_rel) = -1), which cannot be represented by a proper rotation
+        parameter transform. Symmetric tying is therefore DISABLED by
+        default; each of the 13 bodies is identified independently (130
+        params) with the prior regularizing weakly-excited directions.
+
+        phi_active_thresh: contact gate. PRIME's log-barrier requires phi
         accurate to ~0.01 mm (mocap). Without mocap we gate contacts at this
         threshold and clamp phi to <= 0 for gated points, so contact forces
         are determined by dynamic balance, not by absolute phi accuracy."""
@@ -171,6 +197,19 @@ class X1Dynamics:
             self.groups = [[b] for b in self.bodies]
         self.n_groups = len(self.groups)
         self.n_theta = 10 * self.n_groups
+
+        # per-body rotation relative to its group's first body (neutral q),
+        # needed because left/right leg frames are rotated ~180 deg apart
+        import pinocchio as _pin
+        _q0 = _pin.neutral(self.model)
+        _pin.forwardKinematics(self.model, self.data, _q0)
+        _pin.updateFramePlacements(self.model, self.data)
+        self.group_B: List[List[np.ndarray]] = []
+        for grp in self.groups:
+            R0 = self.data.oMi[grp[0]].rotation
+            self.group_B.append(
+                [make_param_transform(R0.T @ self.data.oMi[b].rotation) for b in grp]
+            )
 
         # nominal (URDF) parameters -> prior theta_hat
         pi_raw = self._read_pi()
@@ -247,6 +286,7 @@ class X1Dynamics:
             lever = mc / m
             C = pin.skew(lever)
             I_com = Io + m * (C @ C)  # origin -> COM
+            I_com = 0.5 * (I_com + I_com.T)  # enforce exact symmetry
             self.model.inertias[b] = pin.Inertia(m, lever, I_com)
 
     # group-level theta <-> per-body pi ---------------------------------
@@ -258,10 +298,12 @@ class X1Dynamics:
         return lc[:, _LC_TO_PC]
 
     def pi_groups_to_pi_bodies(self, pi_g: np.ndarray) -> np.ndarray:
+        """Expand per-group pi (in group-first-body frame) to per-body pi,
+        applying the frame rotation for bodies rotated w.r.t. the group head."""
         pi = np.zeros((self.n_bodies, 10))
         for gi, grp in enumerate(self.groups):
-            for b in grp:
-                pi[self.bodies.index(b)] = pi_g[gi]
+            for bi, b in enumerate(grp):
+                pi[self.bodies.index(b)] = self.group_B[gi][bi] @ pi_g[gi]
         return pi
 
     def pi_to_theta(self, pi: np.ndarray, regularize: float = 0.0) -> np.ndarray:
@@ -270,8 +312,11 @@ class X1Dynamics:
 
         theta = np.zeros(self.n_theta)
         for gi, grp in enumerate(self.groups):
-            rows = [self.bodies.index(b) for b in grp]
-            pi_avg = pi[rows].mean(axis=0)[_PC_TO_LC]
+            pi_head = [
+                np.linalg.solve(self.group_B[gi][bi], pi[self.bodies.index(b)])
+                for bi, b in enumerate(grp)
+            ]
+            pi_avg = np.mean(pi_head, axis=0)[_PC_TO_LC]
             theta[10 * gi : 10 * gi + 10] = p2t(pi_avg)
         return theta
 
@@ -281,6 +326,22 @@ class X1Dynamics:
 
     def total_mass(self) -> float:
         return float(pin.computeTotalMass(self.model))
+
+    def selfcheck(self, tol: float = 1e-9) -> float:
+        """Round-trip self-test: pi_nominal -> theta_hat -> set_theta ->
+        read back and compare per-body. MUST pass before any identification.
+        Returns the max abs error (must be <= tol)."""
+        pi_before = self.pi_nominal.copy()
+        self.set_theta(self.theta_hat)
+        pi_after = self._read_pi()
+        err = float(np.abs(pi_before - pi_after).max())
+        self.set_theta(self.theta_hat)
+        if err > tol:
+            raise AssertionError(
+                f"parameter plumbing round-trip failed: max err {err:.3e} > {tol:.0e}"
+                " (check group frame transforms)"
+            )
+        return err
 
     # ------------------------------------------------------------------
     # kinematics / dynamics terms
