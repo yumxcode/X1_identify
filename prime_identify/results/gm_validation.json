@@ -12,5 +12,19 @@
   ],
   "G4_frames_used": 88,
   "G4_PASS": true
+ },
+ "provenance": {
+  "remote_task_id": "TASK_20260831_122",
+  "remote_task_name": "x1-prime-g345-final-v2",
+  "remote_branch": "validate-lite",
+  "remote_commit": "706b6e3",
+  "platform": "gradmotion (internal.limxdynamics.com)",
+  "image": "BJX00000001/V000124 (ubuntu 22.04, py3.8, numpy 1.24.3, conda-forge pinocchio 2.6.0)",
+  "goods": "ESKU000003 (1*L4*24G)",
+  "runtime_s": 164,
+  "final_status": 5,
+  "log_file": "gm_task_122_log.txt",
+  "note": "identical script (gm_validate.py) run locally produces bit-identical numbers",
+  "final_status_label": "Completed"
  }
 }
