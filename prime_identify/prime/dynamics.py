@@ -126,6 +126,54 @@ EXCLUDED_BODIES = (
 )
 
 
+def pc_min_eig_params(m: float, h: np.ndarray, Io: np.ndarray) -> float:
+    """Min eigenvalue of the pseudo-inertia built from ORIGIN-referenced
+    parameters (pinocchio toDynamicParameters semantics):
+
+        I4 = [[Sigma, h], [h^T, m]],  Sigma = 0.5*tr(Io)*Id3 - Io
+
+    Physical consistency <=> I4 ≻ 0 (min eig > 0). Pure function (no
+    pinocchio validation) so corrupted parameters can be unit-tested.
+
+    NOTE: `log_cholesky.is_physically_consistent` assumes pi[4:10] is the
+    COM inertia (its internal convention). Feeding origin-referenced values
+    there silently checks a parallel-axis-shifted object — this caused a
+    false "13/13 violations" diagnosis earlier. Use THESE functions for
+    pinocchio-sourced parameters.
+    """
+    S = 0.5 * np.trace(Io) * np.eye(3) - Io
+    I4 = np.zeros((4, 4))
+    I4[:3, :3] = S
+    I4[:3, 3] = h
+    I4[3, :3] = h
+    I4[3, 3] = m
+    return float(np.linalg.eigvalsh(I4).min())
+
+
+def pc_min_eig_origin(model: pin.Model, joint_id: int) -> float:
+    """pc_min_eig_params for a pinocchio body (origin-referenced params)."""
+    p = model.inertias[joint_id].toDynamicParameters()
+    return pc_min_eig_params(p[0], p[1:4], _vec6_to_inertia(p[4:10]))
+
+
+def _selftest_pc_check():
+    """Bidirectional unit test for pc_min_eig_origin."""
+    model = pin.buildModelFromUrdf(
+        "/Users/yumx/code/robot_x/X1/X1_辨识/X1_train/resources/robots/x1/urdf/x1.urdf",
+        pin.JointModelFreeFlyer(),
+    )
+    # positive case: known-PD body (root_joint, min eig +1.99e-2)
+    e_root = pc_min_eig_origin(model, 1)
+    assert e_root > 1e-3, f"root_joint should be PD, got {e_root}"
+    # negative case: unphysical origin inertia (negative moment). Built via
+    # the pure-function API because pin.Inertia itself validates positivity.
+    p1 = model.inertias[1].toDynamicParameters()
+    Io_bad = _vec6_to_inertia(p1[4:10]) + np.diag([-1.0, -1.0, -1.0])
+    e_bad = pc_min_eig_params(p1[0], p1[1:4], Io_bad)
+    assert e_bad <= 0, f"corrupted-inertia body should violate PC, got {e_bad}"
+    print(f"pc_check selftest OK (root {e_root:+.2e}, degenerate {e_bad:+.2e})")
+
+
 def default_identified_bodies(model: pin.Model) -> List[str]:
     """Bodies whose inertias we identify: all bodies except the ankles."""
     names = [model.names[j] for j in range(1, model.njoints)]
@@ -383,10 +431,7 @@ class X1Dynamics:
     def regressor(self, q: np.ndarray, v: np.ndarray, a: np.ndarray) -> np.ndarray:
         """Y (nv x 10*(njoints-1)) with tau = Y @ p, p = concat per-body
         toDynamicParameters() (about link ORIGIN, [m, mc, Ixx,Ixy,Iyy,Ixz,Iyz,Izz])."""
-        fn = getattr(pin, "computeJointTorqueRegressor", None)
-        if fn is None:
-            fn = pin.jointTorqueRegressor  # pinocchio <= 2.x alias
-        return fn(self.model, self.data, q, v, a).copy()
+        return pin.computeJointTorqueRegressor(self.model, self.data, q, v, a).copy()
 
     # ------------------------------------------------------------------
     # smoothed-contact forward step (PRIME Eq. 17-20)

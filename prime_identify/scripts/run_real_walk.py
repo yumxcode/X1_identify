@@ -13,13 +13,13 @@ import time
 
 import numpy as np
 
-sys.path.insert(0, "/workspace/X1_identify_lite/prime_identify")
+sys.path.insert(0, "/Users/yumx/code/robot_x/X1/X1_辨识/prime_identify")
 from prime.dynamics import X1Dynamics
 from prime.data import load_walk_diag
 from prime.pfie import PFIE, PFIEConfig
 
-URDF = "/Users/yumx/code/robot_x/X1/X1_辨识/urdf/x1.urdf"
-CSV = "/workspace/X1_identify_lite/x1_data/walk_diag_20260824_103222.csv"
+URDF = "/Users/yumx/code/robot_x/X1/X1_辨识/X1_train/resources/robots/x1/urdf/x1.urdf"
+CSV = "/Users/yumx/code/robot_x/X1/X1_辨识/x1_data/walk_diag_20260824_103222.csv"
 
 
 def fie_cost(dyn, wd, frames, theta):
@@ -103,8 +103,8 @@ def main():
     dyn.set_theta(res.theta)
     out["total_mass_est_kg"] = dyn.total_mass()
     import os
-    os.makedirs("/workspace/X1_identify_lite/prime_identify/results", exist_ok=True)
-    with open("/workspace/X1_identify_lite/prime_identify/results/real_walk_ident.json", "w") as f:
+    os.makedirs("/Users/yumx/code/robot_x/X1/X1_辨识/prime_identify/results", exist_ok=True)
+    with open("/Users/yumx/code/robot_x/X1/X1_辨识/prime_identify/results/real_walk_ident.json", "w") as f:
         json.dump({"result": out,
                    "theta": res.theta.tolist(),
                    "theta_hat": dyn.theta_hat.tolist()}, f, indent=1)

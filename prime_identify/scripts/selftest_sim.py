@@ -19,15 +19,15 @@ import argparse
 import sys
 import numpy as np
 
-sys.path.insert(0, "/workspace/X1_identify_lite/prime_identify")
+sys.path.insert(0, "/Users/yumx/code/robot_x/X1/X1_辨识/prime_identify")
 from prime.dynamics import X1Dynamics
 from prime.data import load_walk_diag
 from prime.pfie import PFIE, PFIEConfig
 from prime.log_cholesky import pi_to_theta as p2t
 from prime.dynamics import _PC_TO_LC
 
-URDF = "/Users/yumx/code/robot_x/X1/X1_辨识/urdf/x1.urdf"
-CSV = "/workspace/X1_identify_lite/x1_data/walk_diag_20260824_103222.csv"
+URDF = "/Users/yumx/code/robot_x/X1/X1_辨识/X1_train/resources/robots/x1/urdf/x1.urdf"
+CSV = "/Users/yumx/code/robot_x/X1/X1_辨识/x1_data/walk_diag_20260824_103222.csv"
 
 BODY_NAME = "root_joint"          # base
 KNEE_L = "left_knee_pitch_joint"
