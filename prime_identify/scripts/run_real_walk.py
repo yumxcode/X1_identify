@@ -8,18 +8,22 @@ Reports:
 Outputs results to results/real_walk_ident.json
 """
 import json
+import os
 import sys
 import time
 
 import numpy as np
 
-sys.path.insert(0, "/Users/yumx/code/robot_x/X1/X1_辨识/prime_identify")
+REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.insert(0, os.path.join(REPO, "prime_identify"))
 from prime.dynamics import X1Dynamics
 from prime.data import load_walk_diag
 from prime.pfie import PFIE, PFIEConfig
 
-URDF = "/Users/yumx/code/robot_x/X1/X1_辨识/X1_train/resources/robots/x1/urdf/x1.urdf"
-CSV = "/Users/yumx/code/robot_x/X1/X1_辨识/x1_data/walk_diag_20260824_103222.csv"
+REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+URDF = os.path.join(REPO, "X1_train", "resources", "robots", "x1", "urdf", "x1.urdf")
+REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+CSV = os.path.join(REPO, "x1_data", "walk_diag_20260824_103222.csv")
 
 
 def fie_cost(dyn, wd, frames, theta):
@@ -103,8 +107,8 @@ def main():
     dyn.set_theta(res.theta)
     out["total_mass_est_kg"] = dyn.total_mass()
     import os
-    os.makedirs("/Users/yumx/code/robot_x/X1/X1_辨识/prime_identify/results", exist_ok=True)
-    with open("/Users/yumx/code/robot_x/X1/X1_辨识/prime_identify/results/real_walk_ident.json", "w") as f:
+    os.makedirs(os.path.join(REPO, "prime_identify", "results"), exist_ok=True)
+    with open(os.path.join(REPO, "prime_identify", "results", "real_walk_ident.json"), "w") as f:
         json.dump({"result": out,
                    "theta": res.theta.tolist(),
                    "theta_hat": dyn.theta_hat.tolist()}, f, indent=1)

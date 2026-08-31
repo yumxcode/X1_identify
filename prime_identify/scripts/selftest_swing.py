@@ -3,20 +3,25 @@
 Swing frames: one foot clearly airborne -> its leg rows have NO contact
 force coupling; the regressor there is a pure, exact linear channel.
 """
+import os
 import sys
 import time
 
 import numpy as np
 import pinocchio as pin
 
-sys.path.insert(0, "/Users/yumx/code/robot_x/X1/X1_辨识/prime_identify")
-sys.path.insert(0, "/Users/yumx/code/robot_x/X1/X1_辨识/prime_identify/scripts")
+REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.insert(0, os.path.join(REPO, "prime_identify"))
+REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.insert(0, os.path.join(REPO, "prime_identify"))
 from prime.dynamics import X1Dynamics
 from prime.data import load_walk_diag
 from selftest_sim import perturb_pi_from, KNEE_L, KNEE_R, BODY_NAME
 
-URDF = "/Users/yumx/code/robot_x/X1/X1_辨识/X1_train/resources/robots/x1/urdf/x1.urdf"
-CSV = "/Users/yumx/code/robot_x/X1/X1_辨识/x1_data/walk_diag_20260824_103222.csv"
+REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+URDF = os.path.join(REPO, "X1_train", "resources", "robots", "x1", "urdf", "x1.urdf")
+REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+CSV = os.path.join(REPO, "x1_data", "walk_diag_20260824_103222.csv")
 
 
 def main():
