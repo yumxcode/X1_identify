@@ -114,11 +114,22 @@ def make_param_transform(R: np.ndarray) -> np.ndarray:
     return B
 
 
+#: ankle bodies are EXCLUDED from identification: with only two toe
+#: contact points per foot the ankle dofs are weakly constrained in the
+#: contact QP (free hinge about the line joining the two points), which
+#: injects huge spurious accelerations into the regression.
+EXCLUDED_BODIES = (
+    "left_ankle_pitch_joint",
+    "left_ankle_roll_joint",
+    "right_ankle_pitch_joint",
+    "right_ankle_roll_joint",
+)
+
+
 def default_identified_bodies(model: pin.Model) -> List[str]:
-    """Bodies whose inertias we identify: the floating-base body + all leg
-    bodies, with left/right symmetry tying (see build_symmetry)."""
+    """Bodies whose inertias we identify: all bodies except the ankles."""
     names = [model.names[j] for j in range(1, model.njoints)]
-    return names
+    return [n for n in names if n not in EXCLUDED_BODIES]
 
 
 def build_symmetry(model: pin.Model) -> SymmetryGroups:
@@ -183,7 +194,7 @@ class X1Dynamics:
 
         # bodies: joint indices (1..n-1) whose inertia is identified
         all_names = [self.model.names[j] for j in range(1, self.model.njoints)]
-        id_names = identified_bodies or all_names
+        id_names = identified_bodies or default_identified_bodies(self.model)
         self.bodies = [all_names.index(n) + 1 for n in id_names]
         self.n_bodies = len(self.bodies)
 
@@ -326,6 +337,13 @@ class X1Dynamics:
 
     def total_mass(self) -> float:
         return float(pin.computeTotalMass(self.model))
+
+    def joint_index(self, joint_name: str) -> int:
+        """v-index (6-based) of an actuated joint, with or without the
+        '_joint' suffix."""
+        if not joint_name.endswith("_joint"):
+            joint_name = joint_name + "_joint"
+        return 6 + JOINT_ORDER.index(joint_name)
 
     def selfcheck(self, tol: float = 1e-9) -> float:
         """Round-trip self-test: pi_nominal -> theta_hat -> set_theta ->
