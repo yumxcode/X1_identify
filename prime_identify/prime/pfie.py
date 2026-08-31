@@ -155,7 +155,7 @@ class PFIE:
         for i, k in enumerate(frames):
             if not conv[i]:
                 continue
-            a = (wd.v[k + 1] - wd.v[k]) / wd.dt
+            a = (wd.v_out[k] - wd.v[k]) / wd.dt
             Y = dyn.regressor(wd.q[k], wd.v[k], a)
             Bu = np.zeros(dyn.nv)
             Bu[dyn.v_joint] = wd.u[k]
@@ -188,14 +188,14 @@ class PFIE:
             return theta, 0.0, np.inf, 0
         pi_g = dyn.theta_to_pi_groups(theta)
         pi_hat_g = dyn.theta_to_pi_groups(self.theta_hat)
-        lam_prior = self.prior_w * 1e-6 * max(np.trace(H) / (10 * nG), 1e-12)
+        lam_prior = self.prior_w * 1e-3 * max(np.trace(H) / (10 * nG), 1e-12)
         H += lam_prior * np.eye(10 * nG)
         g += lam_prior * (-(pi_g - pi_hat_g)).reshape(-1)
-        dp = np.linalg.lstsq(H, g, rcond=1e-8)[0]
+        dp = np.linalg.lstsq(H, g, rcond=1e-4)[0]
         if not np.all(np.isfinite(dp)):
             return theta, 0.0, np.inf, n_rows
         pi_scale = np.maximum(np.abs(pi_g.reshape(-1)), 1e-3)
-        dp = np.clip(dp, -0.5 * pi_scale, 0.5 * pi_scale)
+        dp = np.clip(dp, -0.25 * pi_scale, 0.25 * pi_scale)
         pi_new = (pi_g.reshape(-1) + dp).reshape(nG, 10)
         pi_new[:, 0] = np.maximum(pi_new[:, 0], 0.05)
         from .log_cholesky import pi_to_theta as p2t
@@ -212,6 +212,31 @@ class PFIE:
         resid_rms = float(np.sqrt(resid2 / n_rows))
         return theta_new, 0.0, resid_rms, n_rows
 
+    def _accept_cost(self, theta: np.ndarray, frames: np.ndarray) -> float:
+        """Acceptance metric (G2.2): full-row contact-consistent torque
+        residual with lam re-solved at theta."""
+        dyn, wd = self.dyn, self.wd
+        dyn.set_theta(theta)
+        m = np.ones(dyn.nv, dtype=bool)
+        m[:3] = False
+        for jn in ("left_ankle_pitch", "left_ankle_roll",
+                   "right_ankle_pitch", "right_ankle_roll"):
+            m[dyn.joint_index(jn)] = False
+        tot, n = 0.0, 0
+        for k in frames:
+            vp, imp, conv = dyn.solve_contact_step(wd.q[k], wd.v[k], wd.u[k], wd.dt)
+            if not conv or not np.all(np.isfinite(imp)):
+                continue
+            a = (wd.v_out[k] - wd.v[k]) / wd.dt
+            Y = dyn.regressor(wd.q[k], wd.v[k], a)
+            Bu = np.zeros(dyn.nv)
+            Bu[dyn.v_joint] = wd.u[k]
+            Jc, _ = dyn.kinematics(wd.q[k])
+            r = Y @ self._current_p(dyn) - Bu - Jc.T @ imp.reshape(-1) / wd.dt
+            tot += float(np.sum(r[m] ** 2))
+            n += 1
+        return tot / max(n, 1)
+
     def _current_p(self, dyn) -> np.ndarray:
         return np.concatenate(
             [dyn.model.inertias[j].toDynamicParameters() for j in range(1, dyn.model.njoints)]
@@ -222,19 +247,44 @@ class PFIE:
         t0 = time.time()
         theta = self.theta_hat.copy()
         res = PFIEResult(theta=theta)
+        # acceptance metric: full-row contact-consistent residual on a
+        # subsample (same definition as run_real_walk.fie_cost)
+        rng = np.random.default_rng(1)
+        ls_idx = self.idx_tr[rng.choice(len(self.idx_tr), min(150, len(self.idx_tr)), replace=False)]
+
+        def accept_cost(th):
+            return self._accept_cost(th, ls_idx)
+
+        c_cur = accept_cost(theta)
+        res.history.append(c_cur)
         for it in range(self.cfg.n_iters):
             lam, vplus, conv, Jc_all, active = self._sweep(theta, self.idx_tr)
-            theta_new, _, rmse_tr, n_used = self._regression(
+            theta_dir, _, rmse_tr, n_used = self._regression(
                 theta, self.idx_tr, lam, conv, Jc_all, active
             )
+            # line search on the acceptance metric
+            best_alpha, best_cost = 0.0, c_cur
+            for alpha in (1.0, 0.5, 0.25, 0.1):
+                th_try = theta + alpha * (theta_dir - theta)
+                c_try = accept_cost(th_try)
+                if np.isfinite(c_try) and c_try < best_cost:
+                    best_alpha, best_cost = alpha, c_try
+                    break
+            theta_new = theta + best_alpha * (theta_dir - theta)
             dth = np.linalg.norm(theta_new - theta) / (1 + np.linalg.norm(theta))
+            improved = best_cost < c_cur
+            c_cur = min(c_cur, best_cost)
             theta = theta_new
-            res.history.append(rmse_tr)
+            res.history.append(best_cost)
             if verbose:
                 print(
-                    f"  iter {it:2d}: frames={n_used}  joint-resid-RMSE={rmse_tr:.3f} Nm"
-                    f"  dtheta={dth:.2e}  mass={self.dyn.total_mass():.3f} kg"
+                    f"  iter {it:2d}: frames={n_used}  proj-rmse={rmse_tr:.2f}"
+                    f"  alpha={best_alpha:.2f}  accept-cost={best_cost:.1f}"
+                    f"  ({'improved' if improved else 'stalled'})  mass={self.dyn.total_mass():.3f} kg"
                 )
+            if not improved and it >= 2:
+                res.converged = True
+                break
             if dth < 1e-4:
                 res.converged = True
                 break
@@ -250,7 +300,7 @@ class PFIE:
             for i, k in enumerate(idxs):
                 if not conv[i]:
                     continue
-                a = (self.wd.v[k + 1] - self.wd.v[k]) / self.wd.dt
+                a = (self.wd.v_out[k] - self.wd.v[k]) / self.wd.dt
                 Y = self.dyn.regressor(self.wd.q[k], self.wd.v[k], a)
                 Bu = np.zeros(self.dyn.nv)
                 Bu[self.dyn.v_joint] = self.wd.u[k]

@@ -75,7 +75,7 @@ def main():
     # ---- synthesize measurements ----------------------------------------
     rng = np.random.default_rng(7)
     n = args.frames
-    v_meas = wd.v[: n + 1].copy()
+    v_out_syn = np.zeros((n, dyn.nv))
     n_bad = 0
     for k in range(n):
         v_plus, imp, conv = dyn.solve_contact_step(wd.q[k], wd.v[k], wd.u[k], wd.dt)
@@ -83,11 +83,11 @@ def main():
             n_bad += 1
             if not np.all(np.isfinite(v_plus)):
                 v_plus = wd.v[k]
-        v_meas[k + 1] = v_plus
+        v_out_syn[k] = v_plus
     print(f"synthetic rollout: {n_bad}/{n} frames flagged (accepted)")
-    v_meas[1:, 6:] += rng.normal(0, args.noise, (n, 12))
-    v_meas[1:, 3:6] += rng.normal(0, 0.005, (n, 3))
-    wd.v = v_meas
+    v_out_syn[:, 6:] += rng.normal(0, args.noise, (n, 12))
+    v_out_syn[:, 3:6] += rng.normal(0, 0.005, (n, 3))
+    wd.v_out = v_out_syn  # overwrite step OUTPUTS only; inputs stay measured
 
     # ---- identify from nominal ------------------------------------------
     dyn.set_theta(dyn.theta_hat)

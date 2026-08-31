@@ -40,7 +40,7 @@ def fie_cost(dyn, wd, frames, theta):
         if not conv or not np.all(np.isfinite(imp)):
             continue
         Fz_sum.append(imp[:, 2].sum() / wd.dt)
-        a = (wd.v[k + 1] - wd.v[k]) / wd.dt
+        a = (wd.v_out[k] - wd.v[k]) / wd.dt
         Y = dyn.regressor(wd.q[k], wd.v[k], a)
         Bu = np.zeros(dyn.nv)
         Bu[dyn.v_joint] = wd.u[k]

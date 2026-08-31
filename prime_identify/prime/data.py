@@ -35,6 +35,7 @@ class WalkData:
     base_quat: np.ndarray  # (T, 4) [x,y,z,w]
     foot_z: np.ndarray  # (T, 4) world-frame foot heights (before leveling)
     v_mask: np.ndarray  # (nv,) True where v is measured (base lin vel False)
+    v_out: np.ndarray = None  # (T, nv) step output velocity; default v[k+1]
 
 
 def load_walk_diag(csv_path: str, dyn: X1Dynamics) -> WalkData:
@@ -96,6 +97,7 @@ def load_walk_diag(csv_path: str, dyn: X1Dynamics) -> WalkData:
     v_mask[:3] = False  # base linear velocity unobserved
 
     dt = float(np.median(np.diff(t)))
+    v_out = np.vstack([v[1:], v[-1:].reshape(1, -1)])
     return WalkData(
         t=t,
         dt=dt,
@@ -106,6 +108,7 @@ def load_walk_diag(csv_path: str, dyn: X1Dynamics) -> WalkData:
         base_quat=quat,
         foot_z=foot_z_ref,
         v_mask=v_mask,
+        v_out=v_out,
     )
 
 
