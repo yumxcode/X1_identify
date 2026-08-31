@@ -20,8 +20,8 @@ def sh(cmd):
 
 
 def main():
-    # deps
-    sh(f"{sys.executable} -m pip install -q pin numpy scipy")
+    # deps: conda-forge prebuilt pinocchio (pip build fails on this image)
+    sh("conda install -y -c conda-forge pinocchio")
     sys.path.insert(0, os.path.join(REPO, "prime_identify"))
 
     report = {"items": {}}

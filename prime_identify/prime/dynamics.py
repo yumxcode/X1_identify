@@ -383,7 +383,10 @@ class X1Dynamics:
     def regressor(self, q: np.ndarray, v: np.ndarray, a: np.ndarray) -> np.ndarray:
         """Y (nv x 10*(njoints-1)) with tau = Y @ p, p = concat per-body
         toDynamicParameters() (about link ORIGIN, [m, mc, Ixx,Ixy,Iyy,Ixz,Iyz,Izz])."""
-        return pin.computeJointTorqueRegressor(self.model, self.data, q, v, a).copy()
+        fn = getattr(pin, "computeJointTorqueRegressor", None)
+        if fn is None:
+            fn = pin.jointTorqueRegressor  # pinocchio <= 2.x alias
+        return fn(self.model, self.data, q, v, a).copy()
 
     # ------------------------------------------------------------------
     # smoothed-contact forward step (PRIME Eq. 17-20)
