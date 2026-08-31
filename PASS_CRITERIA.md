@@ -63,7 +63,7 @@
 - **G2 FAIL**：真机回归 train 33283→200142（+501%）。与 G1 同根因。
 - **G3 PASS（v1.1 裁决版）**：名义 URDF **0/13** 违规（正确 origin 约定 + 双向单测背书）。v1.0 的"13/13 SolidWorks 缺陷"系检查器约定 bug，已修正并留档（含教训：诊断结论必须以带单测的提交代码为准）。anchored URDF 13/13 PD、round-trip 3.6e-15、总质量 37.100 kg。
 - **G4 PASS**：定版估计 37.355 kg，CI95 [32.04, 39.96]，88/120 帧收敛（本地与远端逐位一致）。早前 37.10 为不同帧集的变体估计，已被定版估计器取代；URDF 锚定值 37.10 取自该估计的较早报告，属保守选择（两点差 0.26 kg ≪ CI 宽度）。
-- **G5 PASS**：G5.1 流程打通（validate-lite 分支规避 305MB 克隆超时；conda-forge pinocchio）；G5.2 远端复算与本地偏差 **0.000 kg**；G5.3 N/A（G1/G2 FAIL）；G5.4 仓库内留档。
+- **G5 PASS**：G5.1 流程打通（validate-lite 分支规避 305MB 克隆超时；conda-forge pinocchio）；G5.2 远端复算与本地偏差 **0.000 kg**（终版任务 TASK_20260831_122 @ validate-lite 314f1ab，runtime 164s：G3 nominal 0/13、anchored round-trip 3.6e-15、G4 37.355 kg / CI95 [32.04, 39.96] / 88 帧）；G5.3 N/A（G1/G2 FAIL）；G5.4 仓库内留档（results/gm_validation.json）。
 - 估计器基建（有单测背书）：log-Cholesky 往返 4e-16；参数管线 round-trip 1.1e-14；接触 QP 静力平衡 0.1%；GRF/体重 = 0.999；PC 检查器双向单测。
 
 ## 4. 修复路线（存档）
