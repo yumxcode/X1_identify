@@ -17,7 +17,7 @@
 | 交付物 | 门禁 | 说明 |
 |---|---|---|
 | `PASS_CRITERIA.md` | — | G1–G5 标准与阈值（v1.1 含 G3 约定裁决修订） |
-| `prime_identify/IDENTIFIABILITY.md` | — | 不可辨识结论的完整证据链（5 个可复现实验） |
+| `prime_identify/IDENTIFIABILITY.md` | — | 不可辨识结论的完整证据链（7 项可复现实验，§2.1–2.7） |
 | `prime_identify/results/x1_gmass_anchored.urdf` | G3+G4 | 总质量锚定 37.10 kg（唯一改动：base_link 质量 +1.777 kg、惯量同比缩放；PD 保持）。**非参数辨识输出** |
 | `prime_identify/results/gm_validation.json` | G5 | 远端=本地的验证记录 |
 | `prime_identify/results/real_walk_ident.json` | G2（FAIL 记录） | 真机辨识尝试的完整 before/after（恶化如实记录） |
@@ -42,7 +42,7 @@
 
 **无基座线运动传感时惯性参数对本数据原理性不可观测：基座参数在关节行中结构为零（远端子树定理），腿参数在现有激励下设计矩阵谱秩亏；论文靠动捕基座测量（独立于接触力）获得信息，本数据无此传感。**
 
-证据链（`IDENTIFIABILITY.md` §2.1–2.6，6 项实验全部可复现，脚本已核验可跑）：
+证据链（`IDENTIFIABILITY.md` §2.1–2.7，7 项实验全部可复现，脚本已核验可跑）：
 1. 信号通道开放：GT 成本 9.7 vs nominal 67.7（86% 可分）——排除估计器实现缺陷
 2. 支撑相 λ-π 抵消：base 质量标量扫描平坦（82.9–85.9 无谷）
 3. 结构性零列：基座参数列在全部关节行上范数精确为零（`diag_swing_scalar.py`）
