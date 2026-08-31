@@ -43,13 +43,29 @@ def main():
         joint2link[j.get("name")] = child
     # bodies in pinocchio: joint ids 1..13, names = joint names
     updated = 0
+    mass_delta = GRF_TOTAL_MASS - NOMINAL_TOTAL
     for b in dyn.bodies:
         jname = dyn.model.names[b]
+        kk = dyn.bodies.index(b)
         link_name = joint2link.get(jname)
         if link_name is None:
-            # pinocchio freeflyer body 1 aggregates base_link + fixed subtree
+            # pinocchio's freeflyer body aggregates base_link + its FIXED
+            # subtree (lumber/arms/hands, ~17 kg). The aggregated inertia
+            # cannot be uniquely decomposed back, so for the base link we
+            # only add the identified mass delta (scaled inertia, same COM).
             link_name = "base_link"
-        kk = dyn.bodies.index(b)
+            link = next(l for l in root.findall("link") if l.get("name") == link_name)
+            inert = link.find("inertial")
+            mass_el = inert.find("mass")
+            m0 = float(mass_el.get("value"))
+            scale = (m0 + mass_delta) / m0
+            mass_el.set("value", f"{m0 + mass_delta:.9g}")
+            ine = inert.find("inertia")
+            for attr in ("ixx", "iyy", "izz", "ixy", "iyz", "ixz"):
+                ine.set(attr, f"{float(ine.get(attr)) * scale:.9g}")
+            updated += 1
+            continue
+        # movable leg joint body == its child link: write projected values
         link = next(l for l in root.findall("link") if l.get("name") == link_name)
         inert = link.find("inertial")
         m, mc = pi[kk, 0], pi[kk, 1:4]
