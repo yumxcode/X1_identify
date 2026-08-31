@@ -158,8 +158,12 @@ def pc_min_eig_origin(model: pin.Model, joint_id: int) -> float:
 
 def _selftest_pc_check():
     """Bidirectional unit test for pc_min_eig_origin."""
+    import os as _os
     model = pin.buildModelFromUrdf(
-        "/Users/yumx/code/robot_x/X1/X1_辨识/X1_train/resources/robots/x1/urdf/x1.urdf",
+        _os.path.join(
+            _os.path.abspath(_os.path.join(_os.path.dirname(__file__), "..", "..", "..")),
+            "X1_train", "resources", "robots", "x1", "urdf", "x1.urdf",
+        ),
         pin.JointModelFreeFlyer(),
     )
     # positive case: known-PD body (root_joint, min eig +1.99e-2)
