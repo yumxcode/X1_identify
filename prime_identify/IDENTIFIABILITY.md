@@ -53,10 +53,30 @@
 - 固定基座假设下名义模型力矩 vs 电流 R² 仅 0.19–0.31，KT 标定跨关节不一致
   （0.6 vs 65 Nm/A）→ 假设证伪。
 
-### 2.7 论文交叉验证
+### 2.7 IMU 加速度计通道（基座线加速度）：EIV + 振动污染，证伪
+- 动机：`walk_diag` 含 `imu_accel`（比力，均值 [−0.06, 0.28, −0.06]≈0、主频 2.86 Hz
+  ≈步频，语义验证通过 `diag_imu.py`）→ 可重构基座线加速度 a_b，即论文 mocap
+  的替代信息源，解锁完整方程 M a + h − Bu = Jᵀλ 的 null(J) 投影估计（λ 严格消去）。
+- 三种估计器架构在同一合成 GT 协议下全部失败（`selftest_imu.py`/`selftest_window.py`/
+  `selftest_mass.py`）：
+  1. 瞬时 Z 投影 WLS+先验：base −816%、knee ±45%，fit 残差 2.54 **低于** GT 处 10.21
+     —— errors-in-variables 过拟合签名（a 噪声同时进入残差与回归矩阵）；
+  2. 窗脉冲形式（L=10，a 噪声 ↓√L）：box 约束下 base +2.5（箱角截断）但 knees 打在
+     对侧箱角、fit 残差 41.8 > 名义 27.9 —— 先验/箱与病态数据互相拉扯；
+  3. 质量-单参数标量 LS：全部 body 打到负箱角（含 base −2.5，与 130 维拟合的 +2.5
+     符号相反）→ 该"恢复"是噪声抽样，不可信。
+- 物理根因：加速度计信号被足端冲击与结构振动污染（|f| std 3.2、峰值 34 m/s²，
+  振动高出准静态质量信号一个量级）；EIV 偏差与信号同量级（σ_a·M ≈ 0.6×35 ≈ 21 N
+  vs 膝质量信号 m·g·lever ≈ 16 N）。
+- 推论：IMU 加速度计在足式机器人上**不能**替代 mocap 做惯性辨识（与动捕的本质差异：
+  动捕是纯运动学测量，无冲击振动耦合）。
+
+### 2.8 论文交叉验证
 - 论文 G1 实验表（torso 参数恢复）依赖动捕提供的基座线加速度：它使 a_base
   成为**不经过 λ 的独立约束**，破坏 2.2 的抵消。
 - 论文未做无动捕设定的辨识实验；其效率数字（80 μs/rollout）基于 C++ 解析梯度链。
+- 论文的 FDDP+解析梯度链并不改变可辨识性：FDDP 将 a 作为隐变量、以 q/v 测量为代价，
+  其基座信息仍来自 mocap 的 q/v 测量（§2.8 已证 IMU 加速度计通道被振动污染不可用）。
 
 ## 3. 可辨识量与交付
 
@@ -67,6 +87,9 @@
 | 分体惯性参数 | §2.2–2.6 全通道 | 不可辨识（本文档） | — |
 
 ## 4. 打破抵消的最小增配（硬件路线，按性价比）
+
+> 软件侧可试路线已在本档案内穷尽并逐一证伪（§2.2–2.8，含 IMU 加速度计通道三种
+> 估计器架构）；剩余路线均需新数据采集或新传感。
 
 1. **重采固定基座激励**（成本最低）：刚性夹具/可靠悬空（阶跃期间基座 |ω|<0.01 rad/s），
    全关节记录 + 已标定力矩；本档案 §2.6 已证现有 step 数据不满足（基座运动 1.5 rad/s、
@@ -79,12 +102,16 @@
 
 ```
 source .venv/bin/activate && cd prime_identify
-python scripts/sniff_signal.py       # 2.1 信号通道开放（排除实现缺陷）
-python scripts/scan_mass.py          # 2.2 支撑相标量平坦
-python scripts/diag_swing_scalar.py  # 2.3 base 列为零（结构证明）
-python scripts/diag_ceiling.py       # 2.4 摆动相 SVD 秩亏（rank 31/60）
-python scripts/diag_fric.py          # 2.5 真机残差非摩擦
-python scripts/diag_stepdata.py      # 2.6 step 数据基座非固定
-python scripts/selftest_sim.py       # G1 完整自测（FAIL，恢复 ~0%）
-python scripts/make_gmass_urdf.py    # G3+G4 → x1_gmass_anchored.urdf
+python scripts/sniff_signal.py        # 2.1 信号通道开放（排除实现缺陷）
+python scripts/scan_mass.py           # 2.2 支撑相标量平坦
+python scripts/diag_swing_scalar.py   # 2.3 base 列为零（结构证明）
+python scripts/diag_ceiling.py        # 2.4 摆动相 SVD 秩亏（rank 31/60）
+python scripts/diag_fric.py           # 2.5 真机残差非摩擦
+python scripts/diag_stepdata.py       # 2.6 step 数据基座非固定
+python scripts/diag_imu.py            # 2.7 IMU 加速度语义验证
+python scripts/selftest_imu.py        # 2.7a 瞬时 Z 投影（EIV 过拟合签名）
+python scripts/selftest_window.py     # 2.7b 窗脉冲 + box 约束（箱角饱和）
+python scripts/selftest_mass.py       # 2.7c 质量标量 LS（噪声抽样）
+python scripts/selftest_sim.py        # G1 完整自测（FAIL，恢复 ~0%）
+python scripts/make_gmass_urdf.py     # G3+G4 → x1_gmass_anchored.urdf
 ```
