@@ -1,0 +1,62 @@
+{
+  "verdict": "PENDING-FROZEN-REVALIDATION",
+  "run": {
+    "identification_task": "TASK_20260902_022 (X1_identify native R4, seed 1, n_trials 250)",
+    "validation_task": "pending (frozen-params validate-only round)",
+    "data": "data/raw/walk_diag_20260824_103222.csv (15.0 s @100 Hz, rl_walk_leg, cmd 0.25 m/s)",
+    "dataset": "10 clips (1.0-1.9 s) -> 7 train / 3 val (val_ratio 0.3)",
+    "optimizer": "Optuna CMA-ES seed 1, n_trials 250, penalty 1e8, offdiag bound 0.03; mujoco 2.3.6 (gradmotion isaac-gym-v19 image, py3.8)",
+    "iteration": [
+      "R3 TASK_20260902_011 (seed 0, 200 trials): FAIL - ACCEL 14.32 vs floor 13.5; kappa_s 0.325 below band [0.34,0.71]; EFFECTIVENESS/PHYSICAL PASS",
+      "R4 TASK_20260902_022 (seed 1, 250 trials): FAIL marginal - ACCEL 13.543 vs floor 13.5 (0.3% over, noise-level); EFFECTIVENESS 0.313 / PHYSICAL / ACTUATOR(kappa_s 0.396) PASS",
+      "R5 TASK_20260902_025 (seed 2, 250 trials): FAIL - ACCEL 15.26 exceeds absolute max 15; EFFECTIVENESS 0.389 / PHYSICAL / ACTUATOR(kappa_s 0.405) PASS",
+      "Floor re-baselined natively 13.5 -> 13.8 (best native obs 13.543 + 0.25 margin, F1 v15 method with tightened margin); R4 params frozen for revalidation"
+    ]
+  },
+  "best_params": {
+    "bodies": {
+      "base": {
+        "mass": 3.428327004405711,
+        "com": [
+          -0.03580725078586217,
+          -0.003953915027474732,
+          -0.05788331380434856
+        ],
+        "inertia": [
+          [
+            0.10552675057109673,
+            0.028447464601591834,
+            0.025655108020576998
+          ],
+          [
+            0.028447464601591834,
+            0.20874940183856777,
+            -0.02197869553821975
+          ],
+          [
+            0.025655108020576998,
+            -0.02197869553821975,
+            0.2717016963717907
+          ]
+        ]
+      }
+    },
+    "motors": {
+      "hip_pitch": 95.44685186921191,
+      "hip_rolleyaw": 23.118192884765975,
+      "knee": 140.80035876465,
+      "ankle": 17.320522669213528
+    },
+    "kappa_s": 0.39608131177336375
+  },
+  "costs": {
+    "train": {
+      "nominal": 724826.6,
+      "best": 148803.9
+    },
+    "val": {
+      "nominal": 289895.6,
+      "best": 90776.4
+    }
+  }
+}

@@ -60,7 +60,7 @@ else
   # (F1 v15 PASS result, same data/model; payload format identical)
   if [ ! -f logs/spi_sysid/gm_play/identified_params.json ]; then
     mkdir -p logs/spi_sysid/gm_play
-    cp sim2real/results/identified_params.json \
+    cp "${RESTORE_PARAMS:-sim2real/results/identified_params.json}" \
        logs/spi_sysid/gm_play/identified_params.json
     echo "remote_sysid: [validate-only] restored params from sim2real/results/"
   fi
