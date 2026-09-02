@@ -37,7 +37,7 @@ Stage-2（可选迭代）：`run_active.py` 用 FIM(tr F⁻¹)+Bézier 命令优
 gm-run X1_identify/sim2real/scripts/remote_sysid.py
 ```
 
-`remote_sysid.sh` 在远端镜像内完成：`pip install mujoco optuna pyyaml matplotlib` → numpy 级单测（43 个，门禁）→ 依次跑 prepare/run_spi/mass_landscape/apply_params。模型 MJCF 直接取自本仓库 `X1_infer/`（与 F1 Humanoid_motion 同源逐位一致），**无外部兄弟仓库依赖**。产物落在 `logs/`（gradmotion SDK 扫描上传）。
+`remote_sysid.sh` 在远端镜像内完成：`pip install mujoco optuna pyyaml matplotlib` → numpy 级单测（57 个，门禁；含 4 个 vendored MJCF 守卫）→ 依次跑 prepare/run_spi/mass_landscape/apply_params。模型 MJCF 取自 `sim2real/resources/mjcf/`（vendored 自 X1_infer，剥离 mujoco-3.x-only 传感器以兼容镜像 mujoco 2.3.6；守卫单测钉住与源一致），**无外部兄弟仓库依赖**。产物落在 `logs/`（gradmotion SDK 扫描上传）。
 
 validate-only 模式（跳过 ~15 min CMA-ES，用 `sim2real/results/identified_params.json` 冻结参数复验）：
 
@@ -48,7 +48,7 @@ gm-run X1_identify/sim2real/scripts/remote_sysid.py --validate-only
 ### 本地（仅 numpy 级，无需安装——但按项目约束验证仍走远端）
 
 ```bash
-python3 -m unittest discover -s sim2real/tests   # 43 个单元测试
+python3 -m unittest discover -s sim2real/tests   # 57 个单元测试
 python3 sim2real/scripts/prepare_dataset.py ...  # 数据准备仅需 numpy+pyyaml
 ```
 
@@ -71,9 +71,10 @@ sim2real/
 │   ├── bezier.py              # Bézier 命令重参数化
 │   └── command_opt.py         # tr(F⁻¹)+终止惩罚 命令优化
 ├── scripts/                   # prepare/run_spi/validate_spi/mass_landscape/apply/active/remote_sysid
-├── tests/                     # numpy 级单测（43）
-├── results/                   # F1 v15 PASS 辨识参数（同一数据/模型，参考基准）
+├── tests/                     # 单测 57（53 numpy 级 + 4 vendored MJCF 守卫）
+├── results/                   # 辨识参数与远端任务日志：原生 R4+R7 PASS（r4_native_identified_params.json）+ F1 v15 基准 + R1-R7 迭代日志
 ├── export/                    # 导出工件（URDF/MJCF/DR/报告）
+├── resources/mjcf/            # vendored 2.3.6 兼容 MJCF（serial+flat+env；meshdir 指回 X1_infer）
 └── resources/x1_nominal.urdf  # 名义 URDF（与 X1_train resources 逐位一致）
 ```
 
