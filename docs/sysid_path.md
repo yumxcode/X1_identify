@@ -98,5 +98,5 @@
 
 1. 本文档随每次装备/数据/结论变化更新版本号与约束快照。
 2. 每轮辨识/分析在 `docs/methods_log.md` 追加记录（方法、数据、任务号、结论）；被验证有用的方法沉淀为脚本并登记在根 README §4。
-3. 门禁级结论（PASS/FAIL）只能由已提交、带单测的检查代码产生（`validate_spi.py`），ad-hoc 脚本结论不进交付文档——继承 PRIME 路线的质量教训（`DELIVERY.md §6`）。
+3. 门禁级结论（PASS/FAIL）只能由已提交、带单测的检查代码产生（`validate_spi.py`），ad-hoc 脚本结论不进交付文档——继承 PRIME 路线的质量教训（`docs/rounds/2026-08-31_prime/DELIVERY.md` §6）。
 4. 上游契约（字段/频率/时钟）以 F1 `doc/测试体系/` 为唯一权威，本仓库 `data/README.md` 只做消费者视角映射，发现不一致以 F1 文档为准并在此处登记差异。

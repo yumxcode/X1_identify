@@ -1,5 +1,6 @@
 # X1 参数辨识交付报告（PRIME 复现，无 mocap 适配）
 
+> 归档说明：本文件原位于仓库根目录 `DELIVERY.md`，2026-09-02 目录整理时移入 `docs/rounds/`；文中路径均为仓库根相对路径。
 > 日期：2026-08-31 · 仓库：github.com/yumxcode/X1_identify（main + validate-lite）
 > 通过标准：`PASS_CRITERIA.md` v1.1（G1–G5）· 可辨识性根因：`prime_identify/IDENTIFIABILITY.md`
 

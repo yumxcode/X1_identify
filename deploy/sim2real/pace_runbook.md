@@ -3,7 +3,7 @@
 > 文档状态：Draft / 首轮执行前评审  
 > 适用方案：PACE（Precise Adaptation through Continuous Evolution）  
 > 适用对象：X1 下肢 12 个关节，重点包含左右并联踝  
-> 上位方案：[X1 参数辨识与 Sim2Real 三方案设计](../../x1_sim2real_system_design.md)  
+> 上位方案：[X1 参数辨识与 Sim2Real 三方案设计](../../docs/archive/x1_sim2real_system_design.md)  
 > 重要说明：当前仓库已经具备踝关节 step/sine 实机采集入口，但尚未实现 chirp、参数化 replay、CMA-ES 和参数回灌。本手册用“当前可运行”和“待实现”明确区分两类步骤。
 ## 1. 目标与最终产物
 

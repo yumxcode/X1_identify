@@ -2,7 +2,7 @@
 
 > 状态：Runbook / 分阶段待实施  
 > 日期：2026-08-11  
-> 依据：`x1_sim2real_system_design.md`、当前 `X1_train` 和 `X1_infer` 代码  
+> 依据：`docs/archive/x1_sim2real_system_design.md`、当前 `X1_train` 和 `X1_infer` 代码  
 > 参考：[Sampling-Based System Identification with Active Exploration for Legged Robot Sim2Real Learning](https://arxiv.org/html/2505.14266v1)
 
 ## 0. 结论与当前起点

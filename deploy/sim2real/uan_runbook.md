@@ -2,7 +2,7 @@
 
 > 状态：Runbook / 分阶段待实施  
 > 日期：2026-08-11  
-> 依据：`x1_sim2real_system_design.md`、当前 `X1_train` 和 `X1_infer` 代码  
+> 依据：`docs/archive/x1_sim2real_system_design.md`、当前 `X1_train` 和 `X1_infer` 代码  
 > 参考：[Bridging the Sim-to-Real Gap for Athletic Loco-Manipulation](https://arxiv.org/html/2502.10894v1)
 
 ## 0. 结论与当前起点
