@@ -14,9 +14,9 @@ model:
   # <jointactuatorfrc> sensors stripped (passive sensors; dynamics unchanged)
   # so it also loads under the gradmotion image's mujoco 2.3.6 (py3.8).
   # meshdir in the vendored serial.xml points back at X1_infer's meshes.
-  # Drift guard: sim2real/tests/test_mjcf_compat.py asserts vendored ==
+  # Drift guard: spi_identify/tests/test_mjcf_compat.py asserts vendored ==
   # X1_infer source minus those sensor lines.
-  mjcf: "sim2real/resources/mjcf/xyber_x1_flat.xml"
+  mjcf: "spi_identify/resources/mjcf/xyber_x1_flat.xml"
   base_body: "x1-body"
   base_body_key: "base"          # key inside params.bodies
   foot_bodies: ["link_left_ankle_roll", "link_right_ankle_roll"]

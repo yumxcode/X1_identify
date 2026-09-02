@@ -5,8 +5,8 @@ Requires mujoco + optuna + pyyaml (installed by remote_sysid.sh on the
 gradmotion image, or manually on any workstation).
 
 Usage:
-  python sim2real/scripts/run_spi.py \
-      --config sim2real/configs/x1_spi.yaml \
+  python spi_identify/scripts/run_spi.py \
+      --config spi_identify/configs/x1_spi.yaml \
       --dataset data/derived/x1_clips.npz \
       --out-dir logs/spi_sysid
 """

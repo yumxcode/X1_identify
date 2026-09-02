@@ -9,8 +9,8 @@ the holdout split of the dataset, and produces:
   stdout summary + exit code: 0 = PASS, 1 = FAIL, 2 = error
 
 Usage:
-  python sim2real/scripts/validate_spi.py \
-      --config sim2real/configs/x1_spi.yaml \
+  python spi_identify/scripts/validate_spi.py \
+      --config spi_identify/configs/x1_spi.yaml \
       --dataset data/derived/x1_clips.npz \
       --params logs/spi_sysid/gm_play/identified_params.json \
       --out-dir logs/spi_sysid

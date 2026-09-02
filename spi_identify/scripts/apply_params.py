@@ -3,7 +3,7 @@
 downstream remote retraining (agibot_x1_train framework).
 
 Inputs : identified_params.json (from run_spi.py / extract_pt.py)
-Outputs (under --out-dir, default sim2real/export/):
+Outputs (under --out-dir, default spi_identify/export/):
   * x1_identified.urdf          pelvis inertial patched (base_link)
   * xyber_x1_identified.xml     MJCF robot include patched (x1-body)
   * dr_x1_spi.json              DR ranges re-centred on identified values
@@ -141,13 +141,13 @@ def _mat2quat(R: np.ndarray) -> np.ndarray:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--params", required=True, help="identified_params.json")
-    ap.add_argument("--urdf", default=str(ROOT / "sim2real/resources/x1_nominal.urdf"))
+    ap.add_argument("--urdf", default=str(ROOT / "spi_identify/resources/x1_nominal.urdf"))
     ap.add_argument("--mjcf", default=str(
-        ROOT / "sim2real/resources/mjcf/robot/xyber_x1/xyber_x1_serial.xml"),
+        ROOT / "spi_identify/resources/mjcf/robot/xyber_x1/xyber_x1_serial.xml"),
         help="MJCF robot include to patch (default: vendored 2.3.6-compatible copy)")
     ap.add_argument("--urdf-body", default="base_link")
     ap.add_argument("--mjcf-body", default="x1-body")
-    ap.add_argument("--out-dir", default=str(ROOT / "sim2real/export"))
+    ap.add_argument("--out-dir", default=str(ROOT / "spi_identify/export"))
     ap.add_argument("--no-clamp", action="store_true",
                     help="export raw identified values without physical clamp")
     args = ap.parse_args()

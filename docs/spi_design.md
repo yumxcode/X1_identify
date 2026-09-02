@@ -200,7 +200,7 @@ SPI-Active/
 ### 4.2 目录结构（本分支新增）
 
 ```
-sim2real/
+spi_identify/
 ├── README.md              # 使用手册
 ├── requirements.txt       # mujoco, optuna, numpy, matplotlib
 ├── configs/x1_spi.yaml    # 参数空间/代价权重/clip 配置（全部可覆写）
@@ -232,7 +232,7 @@ sim2real/
 2. **回放控制**：髋/膝 `τ_PD = kp(q_des_lpf − q) − kd·q̇`（kp/kd 从数据文件名或 rl_x1.yaml 注入）→ `κ·tanh(τ_PD/κ)`；并联踝 `τ = κ·tanh(τ_des_lpf/κ)`。**q 取仿真状态**（非录制值），保证是真正的闭环执行器模型
 3. **代价**：默认启用 quat(2.0)/ω(0.5×0.5)/q(3.0)/q̇(0.1)/τ(0.01×0.2) + 全部正则(×0.1)；`base_pos/base_lin_vel` 权重默认 0（无动捕），有动捕后改回 4.0/1.0
 4. **远程训练衔接**：`apply_params.py` 产出的 MJCF + DR yaml 按 gradmotion 任务模板合入 payload（`gm task create` 遵循 skill 最小模板：taskBaseInfo/taskCodeInfo、goodsId、imageVersion、--file 提交、--dry-run 预检）
-5. **执行策略（用户约束）**：**本地不安装任何依赖、一切执行走 gradmotion 远端**。本地仅跑 numpy 级单元测试与纯标准库操作；MuJoCo 回放/CMA-ES 优化由远端任务执行，startScript 固定为 `gm-run F1/sim2real/scripts/remote_sysid.sh`（脚本内部 pip 安装 requirements.txt、软链 Humanoid_motion 为 motion_control、依次跑 prepare→run_spi→mass_landscape→apply，产物写 `logs/` 由 SDK 回传）。详细用法见 `sim2real/README.md`。
+5. **执行策略（用户约束）**：**本地不安装任何依赖、一切执行走 gradmotion 远端**。本地仅跑 numpy 级单元测试与纯标准库操作；MuJoCo 回放/CMA-ES 优化由远端任务执行，startScript 固定为 `gm-run F1/spi_identify/scripts/remote_sysid.sh`（脚本内部 pip 安装 requirements.txt、软链 Humanoid_motion 为 motion_control、依次跑 prepare→run_spi→mass_landscape→apply，产物写 `logs/` 由 SDK 回传）。详细用法见 `spi_identify/README.md`。
 
 ### 4.4 局限与后续
 
@@ -257,7 +257,7 @@ gradmotion A10 (ESKU000004) + Isaac Gym 镜像 V000124 (py3.8)，`remote_sysid.s
 
 **弱可观测方向（工程判断，已在导出时钳制）**：无动捕下 com_y/z（raw ±0.19/−0.20）与惯量（raw eig 至 2.27 kg·m²）超出 7 kg 骨盆的物理合理域——由质量-惯量-增益相关性吸收模型误差。`apply_params.py` 导出 URDF/MJCF 时钳制 com 每轴 ±0.15 m、惯量 eig ∈ [0.005, 1.0]，raw 值完整保留在 `dr_x1_spi.json` 的 `raw` 块与 `report.md` 中（可用 `--no-clamp` 关闭）。
 
-产物（本地 `sim2real/`，均由 numpy 级脚本生成）：
+产物（本地 `spi_identify/`，均由 numpy 级脚本生成）：
 - `results/identified_params.{pt,json}` —— 远端回传的辨识结果
 - `export/x1_identified.urdf` / `xyber_x1_identified.xml` —— 回写后的骨盆惯量
 - `export/dr_x1_spi.json` —— 以辨识值为中心的 DR 配置（质量 ±5%、com ±0.03 m）
@@ -310,7 +310,7 @@ gradmotion 连续迭代 7 轮 full 流水线，最终 **TASK_20260823_024 verdic
 | v11 | 惯量域 0.38、罚 3e6 | ACCEL/EFFECTIVENESS PASS；com 大幅超域（罚仍太软）→ FAIL |
 | **v12** | **罚 1e8（真硬约束）、n_trials 100** | **全 PASS：ratio 0.089 / PHYSICAL 入域 / ACCEL 12.55（-66.5%）** |
 
-**v12 最终辨识参数（`sim2real/results/identified_params.json`）与可信度**：
+**v12 最终辨识参数（`spi_identify/results/identified_params.json`）与可信度**：
 
 | 参数 | 值 | 名义 | 可信度 |
 |---|---|---|---|
@@ -330,7 +330,7 @@ gradmotion 连续迭代 7 轮 full 流水线，最终 **TASK_20260823_024 verdic
 
 ### 6.5 新数据重辨识（2026-08-24 上传数据，v13 → v15）
 
-新上传 `sim2real/data/`：`walk_diag_20260824_103222.csv`（15 s @100 Hz 行走，rl_walk_leg，cmd 0.25 m/s）+ 12 个 1 kHz 单关节阶跃 CSV（~330 MB 本地保留，不入库）。
+新上传 `spi_identify/data/`：`walk_diag_20260824_103222.csv`（15 s @100 Hz 行走，rl_walk_leg，cmd 0.25 m/s）+ 12 个 1 kHz 单关节阶跃 CSV（~330 MB 本地保留，不入库）。
 
 **新证据链（阶跃数据 → κs 独立锚定）**：对 12 个阶跃日志复现 M1 回归（τ ≈ α·kp·e + β·kd·q̇ + c，`data/step_m1_regression_all.json`）：串联关节有效刚度缩放 α = 0.34–0.71（knee 0.55，与既有 `m1_regression.json` 一致；左右对称 <0.02）。α 即 SPI tanh 电机模型的小信号增益 κs —— κs 搜索域从盲域 [0.5,1.5] 收紧为证据带外扩 [0.30,0.80]，并新增**完成标准 4（ACTUATOR）**：辨识 κs 必须落在 [0.34,0.71]。上轮 v12 的 κs=0.527 贴旧盒下界由此获得物理解释（非巧合）。
 
@@ -344,7 +344,7 @@ gradmotion 连续迭代 7 轮 full 流水线，最终 **TASK_20260823_024 verdic
 
 **关键方法学结论**：v12（旧数据）/v13/v14 三次辨识后的 holdout 比力 RMS 分别 12.55/12.92/13.01——**与数据集无关**，即 ~13 是"无动捕开环回放"的可达残差地板；65% 相对改善仅当 nominal≈37（旧数据）才可达。故 ACCEL 标准改为双侧界 `best ≤ min(15, max(13.5, 0.35×nominal))`：nominal 高时仍要求 65% 改善，触地板后由绝对上限把关；接动捕后移除地板分支并收紧 max 至 1.5。
 
-**v15 最终辨识参数**（`sim2real/results/identified_params.json`，export 产物已同步 `sim2real/export/`）：
+**v15 最终辨识参数**（`spi_identify/results/identified_params.json`，export 产物已同步 `spi_identify/export/`）：
 
 | 参数 | 值 | 名义 | 可信度 |
 |---|---|---|---|

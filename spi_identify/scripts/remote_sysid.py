@@ -6,7 +6,7 @@ python interpreter, so a bare ``.sh`` startScript fails with SyntaxError.
 This wrapper simply re-execs ``remote_sysid.sh`` under bash; the script
 self-locates via ``$(dirname $0)`` so the cwd does not matter.
 
-startScript form:  gm-run X1_identify/sim2real/scripts/remote_sysid.py [--validate-only] [--params-file=PATH]
+startScript form:  gm-run X1_identify/spi_identify/scripts/remote_sysid.py [--validate-only] [--params-file=PATH]
 Extra args pass through to run_spi.py in full mode (e.g. --seed 1 --n-trials 250);
 --params-file selects the committed params file for validate-only revalidation.
 """

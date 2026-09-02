@@ -23,6 +23,6 @@
 
 ## 当前有效基准（速查）
 
-- **原生辨识基准**：R4（TASK_20260902_022）+ R7 冻结复验 PASS（TASK_20260902_034）→ `sim2real/results/r4_native_identified_params.json`
+- **原生辨识基准**：R4（TASK_20260902_022）+ R7 冻结复验 PASS（TASK_20260902_034）→ `spi_identify/results/r4_native_identified_params.json`
 - **交叉基准**：F1 v15 参数原生复验 PASS（TASK_20260902_030）
 - 两套参数差异集中于弱可观方向（质心/惯量/κ_hip）；κs 与 κ_knee 互洽 → 详见 [../sysid_path.md §2 路线 A](../sysid_path.md)

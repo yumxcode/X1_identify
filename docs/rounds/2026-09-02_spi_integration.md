@@ -1,19 +1,19 @@
 # ADDENDUM — SPI 集成与原生验证交付（2026-09-02）
 
-> 归档说明：本文件原位于仓库根目录 `ADDENDUM.md`，2026-09-02 目录整理时移入 `docs/rounds/`；文中路径均为仓库根相对路径。
+> 归档说明：本文件原位于仓库根目录 `ADDENDUM.md`，2026-09-02 目录整理时移入 `docs/rounds/`；文中 `sim2real/` 路径已随目录改名同步为 `spi_identify/`（同日）。
 > 本文为 2026-09-02「项目改造为专属 sim2real 系统辨识 + SPI 集成」轮次的交付记录，接续 [2026-08-31_prime/DELIVERY.md](2026-08-31_prime/DELIVERY.md)（PRIME 路线 2026-08-31 交付）。
 
 ## 1. 目标与结果总览
 
 | # | 目标 | 结果 |
 |---|---|---|
-| 1 | SPI 系统辨识集成（源自 F1 `dev/sim2real-spi` v15） | ✅ `sim2real/` 全流水线 vendor + 路径适配；57 单测（53 原有 + 4 vendored MJCF 守卫）远端全过 |
+| 1 | SPI 系统辨识集成（源自 F1 `dev/sim2real-spi` v15） | ✅ `spi_identify/` 全流水线 vendor + 路径适配；57 单测（53 原有 + 4 vendored MJCF 守卫）远端全过 |
 | 2 | 改造为专属 sim2real 系统辨识项目 | ✅ 根 README 重写；PRIME 路线归档为历史交付；本项目定位 = F1 数据观测体系的消费者 |
 | 3 | 预留 data/ 数据目录 | ✅ `data/raw`（12 step CSV + walk_diag）+ `data/derived`（M1 回归证据、clips）+ `data/README.md`（与 F1 D0–D2 数据契约映射、上传约定、质量红线） |
 | 4 | 现状约束下的辨识方案路径（持续维护） | ✅ `docs/sysid_path.md`（路线 A/B/C + 装备升级开关）+ `docs/methods_log.md`（方法→脚本台账） |
 | 5 | 一切验证走 gradmotion 远端 | ✅ 全部 7 轮任务均在远端执行（A10/isaac-gym-v19），本地零依赖执行 |
 
-## 2. 远端任务链（项目 PRO_20260902_001，全部日志归档 `sim2real/results/gm_task_*.txt`）
+## 2. 远端任务链（项目 PRO_20260902_001，全部日志归档 `spi_identify/results/gm_task_*.txt`）
 
 | 轮次 | 任务 | 内容 | 结果 |
 |---|---|---|---|
@@ -26,7 +26,7 @@
 | R6 | TASK_20260902_030 | F1 v15 参数原生复验（控制组） | **PASS** exit 0（两环境互洽） |
 | R7 | TASK_20260902_034 | R4 原生参数冻结复验 | **PASS** exit 0：四项全过——**原生辨识+原生验证闭环** |
 
-## 3. 原生辨识结果（`sim2real/results/r4_native_identified_params.json`）
+## 3. 原生辨识结果（`spi_identify/results/r4_native_identified_params.json`）
 
 | 参数 | 原生 R4（PASS） | F1 v15（PASS，交叉） | 名义 |
 |---|---|---|---|
@@ -46,7 +46,7 @@
 
 ```
 main（远端同步至本轮交付）
-├── sim2real/                SPI 流水线（vendored from F1 v15 + 本轮适配）
+├── spi_identify/                SPI 流水线（vendored from F1 v15 + 本轮适配）
 │   ├── resources/mjcf/      vendored 2.3.6 兼容 MJCF（+4 守卫单测）
 │   ├── results/             r4_native_identified_params.json（PASS）+ 7 份任务日志 + r3/r4/r5 .pt
 │   └── scripts/             remote_sysid（--validate-only/--params-file/--seed 透传）

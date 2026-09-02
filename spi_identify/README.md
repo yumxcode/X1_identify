@@ -1,5 +1,7 @@
 # SPI / SPI-Active Sim2Real Pipeline for X1（X1_identify 工作区版）
 
+> 目录名 `spi_identify/`（2026-09 由 `sim2real/` 改名，与 `prime_identify/` 对称命名：一条辨识路线一个目录）；历史文档/任务日志中的 `sim2real/` 路径即指本目录。
+
 基于 **SPI-Active**（*Sampling-Based System Identification with Active Exploration for Legged Robot Sim2Real Learning*, CoRL 2025 Oral, arXiv:2505.14266）的 X1 系统辨识与 sim2real 流水线。
 
 > vendored from F1 `dev/sim2real-spi`（v15 PASS），路径已适配本仓库布局。
@@ -22,7 +24,7 @@ logs/spi_sysid/gm_play/identified_params.json|.pt
 logs/spi_sysid/validation.json  (verdict: PASS/FAIL, 退出码 0/1)
    │ apply_params.py             回写 URDF/MJCF + 生成 DR 配置
    ▼
-sim2real/export/{x1_identified.urdf, xyber_x1_identified.xml, dr_x1_spi.json}
+spi_identify/export/{x1_identified.urdf, xyber_x1_identified.xml, dr_x1_spi.json}
    └─→ gradmotion 远端重训（X1_train = agibot_x1_train 框架）→ 新 ONNX → F1 部署
 ```
 
@@ -34,28 +36,28 @@ Stage-2（可选迭代）：`run_active.py` 用 FIM(tr F⁻¹)+Bézier 命令优
 
 ```bash
 # startScript（已含 pip 依赖安装 + 单测 + 全流水线）:
-gm-run X1_identify/sim2real/scripts/remote_sysid.py
+gm-run X1_identify/spi_identify/scripts/remote_sysid.py
 ```
 
-`remote_sysid.sh` 在远端镜像内完成：`pip install mujoco optuna pyyaml matplotlib` → numpy 级单测（57 个，门禁；含 4 个 vendored MJCF 守卫）→ 依次跑 prepare/run_spi/mass_landscape/apply_params。模型 MJCF 取自 `sim2real/resources/mjcf/`（vendored 自 X1_infer，剥离 mujoco-3.x-only 传感器以兼容镜像 mujoco 2.3.6；守卫单测钉住与源一致），**无外部兄弟仓库依赖**。产物落在 `logs/`（gradmotion SDK 扫描上传）。
+`remote_sysid.sh` 在远端镜像内完成：`pip install mujoco optuna pyyaml matplotlib` → numpy 级单测（57 个，门禁；含 4 个 vendored MJCF 守卫）→ 依次跑 prepare/run_spi/mass_landscape/apply_params。模型 MJCF 取自 `spi_identify/resources/mjcf/`（vendored 自 X1_infer，剥离 mujoco-3.x-only 传感器以兼容镜像 mujoco 2.3.6；守卫单测钉住与源一致），**无外部兄弟仓库依赖**。产物落在 `logs/`（gradmotion SDK 扫描上传）。
 
-validate-only 模式（跳过 ~15 min CMA-ES，用 `sim2real/results/identified_params.json` 冻结参数复验）：
+validate-only 模式（跳过 ~15 min CMA-ES，用 `spi_identify/results/identified_params.json` 冻结参数复验）：
 
 ```bash
-gm-run X1_identify/sim2real/scripts/remote_sysid.py --validate-only
+gm-run X1_identify/spi_identify/scripts/remote_sysid.py --validate-only
 ```
 
 ### 本地（仅 numpy 级，无需安装——但按项目约束验证仍走远端）
 
 ```bash
-python3 -m unittest discover -s sim2real/tests   # 57 个单元测试
-python3 sim2real/scripts/prepare_dataset.py ...  # 数据准备仅需 numpy+pyyaml
+python3 -m unittest discover -s spi_identify/tests   # 57 个单元测试
+python3 spi_identify/scripts/prepare_dataset.py ...  # 数据准备仅需 numpy+pyyaml
 ```
 
 ## 目录结构
 
 ```
-sim2real/
+spi_identify/
 ├── configs/x1_spi.yaml        # 参数空间/代价权重/clip/active 全部可配
 │                              #   model.mjcf -> X1_infer/.../xyber_x1_flat.xml
 │                              #   data.sources -> data/raw/walk_diag_*.csv

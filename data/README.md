@@ -30,7 +30,7 @@ data/
 
 1. 新数据一律放 `data/raw/`，保持采集端原始文件名，不做任何清洗改名。
 2. 同轮多文件（如一轮 S1–S3 场景采集）建议放 `data/raw/<轮次日期>_.../` 子目录，并在提交信息中注明 F1 侧对应的场景/采集流程。
-3. 每个新数据集若要进入辨识流水线：在 `sim2real/configs/x1_spi.yaml` 的 `data.sources` 增加条目（files + 该轮 kp/kd），其余阶段自动生效。
+3. 每个新数据集若要进入辨识流水线：在 `spi_identify/configs/x1_spi.yaml` 的 `data.sources` 增加条目（files + 该轮 kp/kd），其余阶段自动生效。
 4. 上传后先跑 `remote_sysid.py`（gradmotion 远端）走一遍 dataset 阶段，确认 parse 通过、clip 数量合理，再决定是否全量重辨识。
 
 ## 4. 现有数据档案

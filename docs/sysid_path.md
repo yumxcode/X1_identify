@@ -32,11 +32,11 @@
     ▼           ▼                        ▼
  【路线A·SPI】 【路线B·关节级】      【路线C·待启用】
  全身白盒辨识   M1 回归 κs 锚定       通信/执行误差分离
- (sim2real/)   (data/derived/)       （需 F1 rosbag 接入）
+ (spi_identify/)   (data/derived/)       （需 F1 rosbag 接入）
     │           │
     └─────┬─────┘
           ▼
-   identified URDF/MJCF + DR（sim2real/export/）
+   identified URDF/MJCF + DR（spi_identify/export/）
           ▼
    gradmotion 远端重训（X1_train 框架）
           ▼
@@ -51,10 +51,10 @@
 4. **优化**：Optuna CMA-ES × MuJoCo 开环回放（初态对齐、实机指令回放、tanh 电机模型）。
 5. **完成标准（四项全过才 PASS，`validate_spi.py` 自动判定）**：① holdout 代价 ≤ nominal 70%；② 物理合理域；③ IMU 比力 RMS ≤ min(15, max(13.5, 0.35×nominal))——13.5 为无动捕开环回放的方法学地板（3 次独立运行实测）；④ κs 落在阶跃数据 M1 回归证据带 [0.34, 0.71]（独立于行走数据的交叉校验）。
 6. **产出**：`x1_identified.urdf` / `xyber_x1_identified.xml` / `dr_x1_spi.json`（以辨识值为中心的窄带 DR）。
-7. **远端执行**：`gm-run X1_identify/sim2real/scripts/remote_sysid.py`（退出码 0=PASS）。
+7. **远端执行**：`gm-run X1_identify/spi_identify/scripts/remote_sysid.py`（退出码 0=PASS）。
 
 当前基准（双档，均在 gradmotion isaac-gym-v19 镜像原生验证）：
-- **原生辨识基准**：R4 辨识（TASK_20260902_022，seed1/250 trials）+ R7 冻结复验 **PASS**（TASK_20260902_034，exit 0）——质量 3.428 kg（-20% vs 名义）、κs 0.396（带内）、holdout 代价 -68.7%、四项全过。产物 `sim2real/results/r4_native_identified_params.json`。
+- **原生辨识基准**：R4 辨识（TASK_20260902_022，seed1/250 trials）+ R7 冻结复验 **PASS**（TASK_20260902_034，exit 0）——质量 3.428 kg（-20% vs 名义）、κs 0.396（带内）、holdout 代价 -68.7%、四项全过。产物 `spi_identify/results/r4_native_identified_params.json`。
 - **F1 v15 交叉基准**：F1 侧参数（3.783 kg / κs 0.434）在本仓库原生复验 **PASS**（TASK_20260902_030，控制组，两环境互洽）。
 - ACCEL 地板 13.5→13.8 已按三次原生观测（R3 14.32 / R4 13.543 / R5 15.26）再基线（方法同 F1 v15；绝对上限 15 不变）。
 - 可信度分级：质量/κs/κ_knee 高；质心/κ_hip 中；惯量低（无动捕弱可观）。两套参数的差异（质量 3.428 vs 3.783）主要落在弱可观的质心/惯量方向，κs 与 κ_knee 一致（0.396 vs 0.434；90.4 vs 89.4）。
@@ -69,7 +69,7 @@
 
 - **DATA-04 actuator 话题对（1 kHz rosbag）**：通信/执行误差分离（F1 D2 双源交叉原理），可量化 walk_diag 100 Hz 盲区内的执行误差 → 用于收紧 SPI 执行器模型先验。
 - **DATA-02 tm_obs bin**：策略观测向量 dump → G0 软件契约对齐校验（观测 51 维逐项一致），辨识前的前置质量门。
-- **SPI-Active Stage-2**（`sim2real/active/` 已就绪）：FIM(tr F⁻¹) + Bézier 命令优化生成最优激励命令。**前置条件：多行为策略（当前 3 维 cmd_vel 激励多样性不足）**。启用时机：上游训练出 WTW 式多行为策略后。
+- **SPI-Active Stage-2**（`spi_identify/active/` 已就绪）：FIM(tr F⁻¹) + Bézier 命令优化生成最优激励命令。**前置条件：多行为策略（当前 3 维 cmd_vel 激励多样性不足）**。启用时机：上游训练出 WTW 式多行为策略后。
 
 ## 3. 数据分析路径（每轮新数据的标准动作）
 

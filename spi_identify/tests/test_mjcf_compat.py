@@ -2,7 +2,7 @@
 
 The gradmotion training image (py3.8) resolves pip 'mujoco' to 2.3.6, whose
 XML schema rejects MuJoCo-3.x-only elements (e.g. <jointactuatorfrc>).
-sim2real/resources/mjcf/ therefore vendors a copy of X1_infer's model with
+spi_identify/resources/mjcf/ therefore vendors a copy of X1_infer's model with
 those passive sensor lines stripped (dynamics unchanged). These tests pin
 that invariant so a future refresh of the vendored copy cannot silently
 reintroduce incompatible elements or drift from the X1_infer source.
@@ -15,8 +15,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 SRC_SERIAL = REPO / "X1_infer/module/sim_module/model/mjcf/robot/xyber_x1/xyber_x1_serial.xml"
-VENDORED_SERIAL = REPO / "sim2real/resources/mjcf/robot/xyber_x1/xyber_x1_serial.xml"
-VENDORED_FLAT = REPO / "sim2real/resources/mjcf/xyber_x1_flat.xml"
+VENDORED_SERIAL = REPO / "spi_identify/resources/mjcf/robot/xyber_x1/xyber_x1_serial.xml"
+VENDORED_FLAT = REPO / "spi_identify/resources/mjcf/xyber_x1_flat.xml"
 
 # elements rejected by mujoco 2.3.6's schema (extend if new ones appear)
 MUJOCO3_ONLY_ELEMENTS = ("jointactuatorfrc",)

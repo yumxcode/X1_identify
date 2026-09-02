@@ -12,9 +12,9 @@ mujoco, optuna. The policy runner is pluggable:
     (obs 47 + hist 66); wire it in ``--policy onnx --onnx <model.onnx>``.
 
 Usage (remote):
-  python sim2real/scripts/run_active.py \
-      --config sim2real/configs/x1_spi.yaml \
-      --params sim2real/export/identified_params.json \
+  python spi_identify/scripts/run_active.py \
+      --config spi_identify/configs/x1_spi.yaml \
+      --params spi_identify/export/identified_params.json \
       --dataset data/derived/x1_clips.npz --out-dir logs/active_sysid
 """
 

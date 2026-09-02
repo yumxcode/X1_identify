@@ -2,8 +2,8 @@
 """Parse real-robot logger CSVs into an SPI clip dataset (.npz).
 
 Usage (remote / any machine with numpy+pyyaml):
-  python sim2real/scripts/prepare_dataset.py \
-      --config sim2real/configs/x1_spi.yaml --out data/derived/x1_clips.npz
+  python spi_identify/scripts/prepare_dataset.py \
+      --config spi_identify/configs/x1_spi.yaml --out data/derived/x1_clips.npz
 """
 
 from __future__ import annotations
