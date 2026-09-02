@@ -20,6 +20,16 @@ cd "$REPO"
 # committed params from sim2real/results/)
 MODE="${1:-full}"
 shift || true
+# optional --params-file=PATH (validate-only): which committed params file to
+# revalidate (default sim2real/results/identified_params.json). Explicit flag
+# instead of an env var because the platform injects neither env nor shell
+# syntax into startScript.
+PARAMS_FILE=""
+for a in "$@"; do
+  case "$a" in
+    --params-file=*) PARAMS_FILE="${a#*=}" ;;
+  esac
+done
 if [ "$MODE" = "--validate-only" ]; then
   echo "remote_sysid: VALIDATE-ONLY mode (skip identification)"
 fi
@@ -56,13 +66,13 @@ if [ "$MODE" != "--validate-only" ]; then
     --out-dir logs/spi_sysid "$@"
 else
   echo "remote_sysid: [validate-only] params must come from a previous run"
-  # fresh container has no logs/ — fall back to the repo-committed params file
-  # (F1 v15 PASS result, same data/model; payload format identical)
+  # fresh container has no logs/ — fall back to a repo-committed params file
+  # (default: F1 v15 PASS result; --params-file=PATH revalidates another set)
   if [ ! -f logs/spi_sysid/gm_play/identified_params.json ]; then
     mkdir -p logs/spi_sysid/gm_play
-    cp "${RESTORE_PARAMS:-sim2real/results/identified_params.json}" \
+    cp "${PARAMS_FILE:-sim2real/results/identified_params.json}" \
        logs/spi_sysid/gm_play/identified_params.json
-    echo "remote_sysid: [validate-only] restored params from sim2real/results/"
+    echo "remote_sysid: [validate-only] restored params from ${PARAMS_FILE:-sim2real/results/identified_params.json}"
   fi
   ls -la logs/spi_sysid/gm_play/identified_params.json
 fi
