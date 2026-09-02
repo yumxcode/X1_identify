@@ -23,8 +23,8 @@ if [ "$MODE" = "--validate-only" ]; then
   echo "remote_sysid: VALIDATE-ONLY mode (skip identification)"
 fi
 
-# --- model sanity (MJCF lives in this repo: X1_infer) ----------------------
-MJCF_PATH="X1_infer/module/sim_module/model/mjcf/xyber_x1_flat.xml"
+# --- model sanity (vendored SPI MJCF; meshes from X1_infer via meshdir) ----
+MJCF_PATH="sim2real/resources/mjcf/xyber_x1_flat.xml"
 if [ ! -f "$MJCF_PATH" ]; then
   echo "FATAL: MJCF not found at $MJCF_PATH" >&2
   exit 3

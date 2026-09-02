@@ -200,14 +200,24 @@ def main() -> None:
     (out / "dr_x1_spi.json").write_text(json.dumps(dr, indent=2))
     print(f"[apply] DR  -> {out / 'dr_x1_spi.json'}")
 
-    nom_cost = payload.get("nominal_cost")
-    best_cost = payload.get("best_cost")
-    ratio = (nom_cost / best_cost) if nom_cost and best_cost else float("nan")
+    # cost provenance: run_spi.py payloads carry nominal_cost/best_cost;
+    # validate-only payloads (e.g. committed v15 results) carry costs.val
+    costs_val = (payload.get("costs") or {}).get("val") or {}
+    nom_cost = payload.get("nominal_cost") or costs_val.get("nominal")
+    best_cost = payload.get("best_cost") or costs_val.get("best")
+    ratio = (nom_cost / best_cost) if nom_cost and best_cost else None
+    n_clips = payload.get("n_clips") or (payload.get("run") or {}).get("dataset")
     hist = payload.get("history") or []
     hist_tail = "\n".join(f"  - {h}" for h in hist[-5:])
+    cost_line = (
+        f"Multi-step prediction cost: nominal **{nom_cost:.1f}** -> best "
+        f"**{best_cost:.1f}** ({ratio:.1f}x lower).\n\n"
+        if nom_cost and best_cost
+        else "Multi-step prediction cost: see params provenance "
+             f"(costs.val nominal={nom_cost} best={best_cost}).\n\n")
     report = (
         f"# SPI identified parameters — X1 pelvis + motor model\n\n"
-        f"Data: {payload.get('n_clips')} clips (round_exc kp40/kd3 + walk_diag)\n\n"
+        f"Data: {n_clips} clips (walk_diag)\n\n"
         f"## Result\n\n"
         f"| quantity | nominal | identified (raw) | exported (clamped) |\n|---|---|---|---|\n"
         f"| mass [kg] | {NOMINAL_PELVIS['mass']:.4f} | {mass_raw:.4f} | {mass:.4f} |\n"
@@ -218,17 +228,14 @@ def main() -> None:
         f"| motor kappa | (see config nominal) | "
         f"{payload['best_params']['motors']} | same |\n"
         f"| kappa_s | 1.0 | {payload['best_params']['kappa_s']:.4f} | same |\n\n"
-        f"Multi-step prediction cost: nominal **{nom_cost:.1f}** -> best "
-        f"**{best_cost:.1f}** ({ratio:.1f}x lower).\n\n"
-        f"## Notes\n\n"
+        + cost_line
+        + f"\n## Notes\n\n"
         + ("\n".join(f"* clamp: {n}" for n in notes) if notes
            else "* no clamping applied (--no-clamp or in-box values)")
         + "\n* weak observability without mocap: com_y/z and inertia absorb model "
         "error; kappas are all in-box and well identified.\n"
-        "* mass_landscape (mass-only scan, others nominal): best 3.71 kg "
-        "cost 2.15M — mass is correlated with inertia/motor gains in the joint "
-        "optimum, treat single-parameter scans as diagnostic only.\n\n"
-        f"## Optimization history (tail)\n\n{hist_tail}\n")
+        "\n## Optimization history (tail)\n\n"
+        + (hist_tail if hist else "(none — params loaded from committed results)\n"))
     (out / "report.md").write_text(report)
     print(f"[apply] report -> {out / 'report.md'}")
 
