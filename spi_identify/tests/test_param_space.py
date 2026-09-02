@@ -7,6 +7,7 @@ import numpy as np
 from spi.param_space import (phi_search_box, phi_to_physical, physical_to_phi,
                              phi_to_U, tanh_motor_torque, ParamSpace, BodyParams,
                              MotorGroup, physical_violations,
+                             project_to_physical_domain,
                              physical_range_penalty)
 
 # X1 pelvis nominal (from xyber_x1_serial.xml)
@@ -154,6 +155,65 @@ class TestPhysicalRangePenalty(unittest.TestCase):
                                             [0.01, 0.02, 0.0],
                                             [0.0, 0.0, 0.02]]))
         self.assertEqual(physical_violations(ok, cfg), {})
+
+
+class TestProjectToPhysicalDomain(unittest.TestCase):
+    """辨识后物理一致投影（Oaki 2026 SDP-projection 同型操作）。"""
+
+    def _cfg_body(self):
+        return {"name": "base", "mass_range": (3.0, 5.5),
+                "com_range": (-0.06, 0.06), "inertia_diag_range": (0.005, 0.38),
+                "inertia_offdiag_max": 0.03}
+
+    def test_r8_scenario_offdiag_projected(self):
+        # R8 实测场景：xy 惯量积 -0.0470 超域 0.017，其余项域内
+        I = np.array([[0.07653347, -0.04703821, -0.01323961],
+                      [-0.04703821, 0.10682137, -0.00102668],
+                      [-0.01323961, -0.00102668, 0.15859107]])
+        params = {"bodies": {"base": {"mass": 4.0312, "com": np.array([0.0, 0.055, 0.006]),
+                                      "inertia": I}}}
+        proj = project_to_physical_domain(params, [self._cfg_body()])
+        I2 = proj["bodies"]["base"]["inertia"]
+        self.assertLessEqual(abs(I2[0, 1]), 0.03 + 1e-12)
+        self.assertLessEqual(abs(I2[0, 2]), 0.03 + 1e-12)
+        self.assertLessEqual(abs(I2[1, 2]), 0.03 + 1e-12)
+        # 投影后无 violation（PHYSICAL 门禁通过条件）
+        self.assertEqual(physical_violations(proj, [self._cfg_body()]), {})
+        # 域内分量不动（xz/yz 本来就 < 0.03）
+        self.assertAlmostEqual(I2[0, 2], I[0, 2], places=12)
+        # 特征值保持域内且为正
+        lam = np.linalg.eigvalsh(I2)
+        self.assertTrue(np.all(lam >= 0.005 - 1e-12))
+        self.assertTrue(np.all(lam <= 0.38 + 1e-12))
+
+    def test_in_domain_params_unchanged(self):
+        params = {"bodies": {"base": {"mass": M0, "com": COM0.copy(),
+                                      "inertia": I0.copy()}}}
+        proj = project_to_physical_domain(params, [self._cfg_body()])
+        self.assertAlmostEqual(proj["bodies"]["base"]["mass"], M0, places=12)
+        self.assertTrue(np.allclose(proj["bodies"]["base"]["com"], COM0))
+        self.assertTrue(np.allclose(proj["bodies"]["base"]["inertia"], I0, atol=1e-9))
+
+    def test_all_axes_clipped(self):
+        # 三轴全超 + 质量超 + com 超：全部投影回域
+        I = np.array([[0.05, -0.08, 0.05],
+                      [-0.08, 0.05, -0.06],
+                      [0.05, -0.06, 0.40]])
+        params = {"bodies": {"base": {"mass": 9.0, "com": np.array([0.1, -0.1, 0.2]),
+                                      "inertia": I}}}
+        proj = project_to_physical_domain(params, [self._cfg_body()])
+        b = proj["bodies"]["base"]
+        self.assertTrue(3.0 <= b["mass"] <= 5.5)
+        self.assertTrue(np.all(np.abs(b["com"]) <= 0.06))
+        self.assertEqual(physical_violations(proj, [self._cfg_body()]), {})
+
+    def test_motors_and_kappa_s_pass_through(self):
+        params = {"bodies": {"base": {"mass": M0, "com": COM0.copy(),
+                                      "inertia": I0.copy()}},
+                  "motors": {"knee": 127.4}, "kappa_s": 0.361}
+        proj = project_to_physical_domain(params, [self._cfg_body()])
+        self.assertEqual(proj["motors"]["knee"], 127.4)
+        self.assertAlmostEqual(proj["kappa_s"], 0.361)
 
 
 if __name__ == "__main__":

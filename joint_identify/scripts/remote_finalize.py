@@ -7,15 +7,18 @@ Runs, in order:
   2. joint-level identification on the 12 step CSVs (mujoco gravity LUT)
      -> GATE-J1..J5 verdict
   3. SPI dual-bucket dataset preparation (train + cross)
-  4. SPI five-criterion validation of the committed R8 params
+  4. SPI five-criterion validation of the committed R8-projected params
      (re-baselined floors) on the NEW multi-dataset data
      -> EFFECTIVENESS/PHYSICAL/ACCEL/ACTUATOR/CROSS-DATASET verdict
+
+Optional: --params-file=PATH revalidates another committed params file
+(default spi_identify/results/r8p_projected_params.json).
 
 Exit code: 0 only if BOTH verdicts are PASS (bitwise-or of the two rc's,
 keeping 1 = FAIL, 2 = error).
 
 startScript:
-  gm-run X1_identify/joint_identify/scripts/remote_finalize.py
+  gm-run X1_identify/joint_identify/scripts/remote_finalize.py [--params-file=...]
 """
 import subprocess
 import sys
@@ -23,6 +26,11 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
+
+PARAMS_FILE = "spi_identify/results/r8p_projected_params.json"
+for a in sys.argv[1:]:
+    if a.startswith("--params-file="):
+        PARAMS_FILE = a.split("=", 1)[1]
 
 
 def run(cmd, desc, allow_fail=True):
@@ -50,14 +58,14 @@ def main():
                      "--out-cross", "data/derived/x1_cross_clips.npz"],
                     "SPI dataset (train + cross)")
 
-    # 4: five-criterion SPI validation on the committed R8 params
+    # 4: five-criterion SPI validation on the committed R8-projected params
     rc_spi = run([py, "spi_identify/scripts/validate_spi.py",
                   "--config", "spi_identify/configs/x1_spi.yaml",
                   "--dataset", "data/derived/x1_clips.npz",
                   "--cross-dataset", "data/derived/x1_cross_clips.npz",
-                  "--params", "spi_identify/results/r8_newdata_identified_params.json",
+                  "--params", PARAMS_FILE,
                   "--out-dir", "logs/spi_sysid"],
-                 "SPI validation (5 criteria, R8 params, re-baselined floors)")
+                 "SPI validation (5 criteria, R8-projected params)")
 
     print(f"\n[finalize] joint rc={rc_joint & 1} | spi rc={rc_spi & 1}")
     print("[finalize] FINAL:", "PASS" if (rc_joint | rc_spi) == 0 else "FAIL")

@@ -301,6 +301,43 @@ def physical_violations(params: Dict, bodies_cfg: Sequence[Dict]) -> Dict[str, D
     return out
 
 
+def project_to_physical_domain(params: Dict, bodies_cfg: Sequence[Dict]) -> Dict:
+    """Project identified body params onto the configured physical domain.
+
+    Post-identification physical-consistency projection (standard practice:
+    Oaki 2026 OLS->SDP projection; Wensing RA-L'18 LMI). For each body:
+      * mass/com clipped into their ranges;
+      * inertia symmetrized, off-diagonals clipped to inertia_offdiag_max,
+        then eigenvalue-clipped into inertia_diag_range (recomposed keeping
+        the eigenvectors — the projection is the closest spectrum-feasible
+        matrix in the eigenbasis).
+    Only values OUTSIDE the domain move; the result satisfies
+    physical_violations() == {}. Prediction metrics must be RE-VALIDATED
+    after projection (the caller owns that step; see validate_spi.py).
+    """
+    out = {"bodies": {}, "motors": dict(params.get("motors", {})),
+           "kappa_s": params.get("kappa_s", 1.0)}
+    for b in bodies_cfg:
+        p = params["bodies"][b["name"]]
+        m_lo, m_hi = b["mass_range"]
+        mass = float(np.clip(p["mass"], m_lo, m_hi))
+        c_lo, c_hi = b["com_range"]
+        com = np.clip(np.asarray(p["com"], dtype=float), c_lo, c_hi)
+        I = 0.5 * (np.asarray(p["inertia"], dtype=float)
+                   + np.asarray(p["inertia"], dtype=float).T)
+        od_max = b.get("inertia_offdiag_max")
+        if od_max is not None:
+            for i, j in ((0, 1), (0, 2), (1, 2)):
+                I[i, j] = I[j, i] = float(np.clip(I[i, j], -od_max, od_max))
+        i_lo, i_hi = b["inertia_diag_range"]
+        lam, V = np.linalg.eigh(I)
+        lam = np.clip(lam, i_lo, i_hi)
+        I = V @ np.diag(lam) @ V.T
+        I = 0.5 * (I + I.T)
+        out["bodies"][b["name"]] = {"mass": mass, "com": com, "inertia": I}
+    return out
+
+
 def physical_range_penalty(params: Dict, bodies_cfg: Sequence[Dict],
                            scale: float = 1e5) -> float:
     """Hard constraint: steep quadratic penalty per unit of violation.

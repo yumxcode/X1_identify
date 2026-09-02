@@ -1,0 +1,219 @@
+
+=== [finalize] joint unit tests: /opt/conda/envs/pointfoot_legged_gym/bin/python -m unittest discover -s joint_identify/tests
+----------------------------------------------------------------------
+Ran 19 tests in 0.028s
+
+OK
+=== [finalize] joint unit tests rc=0
+
+=== [finalize] joint identification (GATE-J1..J5): /opt/conda/envs/pointfoot_legged_gym/bin/python joint_identify/scripts/run_joint_identify.py
+[joint] ERROR left_ankle_roll_step_20260508_103426.csv: module 'mujoco' has no attribute 'mjtDisableFlag'
+[joint] ERROR left_hip_pitch_step_20260509_093047.csv: module 'mujoco' has no attribute 'mjtDisableFlag'
+[joint] ERROR left_hip_roll_step_20260509_094819.csv: module 'mujoco' has no attribute 'mjtDisableFlag'
+[joint] ERROR left_hip_yaw_step_20260509_095216.csv: module 'mujoco' has no attribute 'mjtDisableFlag'
+[joint] ERROR left_knee_pitch_step_20260509_091930.csv: module 'mujoco' has no attribute 'mjtDisableFlag'
+[joint] ERROR right_ankle_pitch_step_20260508_103121.csv: module 'mujoco' has no attribute 'mjtDisableFlag'
+[joint] ERROR right_ankle_roll_step_20260508_103829.csv: module 'mujoco' has no attribute 'mjtDisableFlag'
+[joint] ERROR right_hip_pitch_step_20260509_093559.csv: module 'mujoco' has no attribute 'mjtDisableFlag'
+[joint] ERROR right_hip_roll_step_20260509_094502.csv: module 'mujoco' has no attribute 'mjtDisableFlag'
+[joint] ERROR right_hip_yaw_step_20260509_095656.csv: module 'mujoco' has no attribute 'mjtDisableFlag'
+[joint] mujoco available: True (12 files)
+[joint] left_ankle_pitch_joint: semantics is_feedback=True ev={'E1_prehold_pos_std': 0.005857, 'E1_prehold_cmd_absmax': 0.0, 'E2_n_cmd_jumps': 54, 'E2_dpos_at_jump_max': 0.002072, 'E3_post_jump_tau_peak_med': 17.420695, 'E3_tau_quiet_median': 1.325831}
+[joint] left_ankle_roll_joint: semantics is_feedback=True ev={'E1_prehold_pos_std': 0.009301, 'E1_prehold_cmd_absmax': 0.0, 'E2_n_cmd_jumps': 96, 'E2_dpos_at_jump_max': 0.000178, 'E3_post_jump_tau_peak_med': 6.411644, 'E3_tau_quiet_median': 0.863875}
+[joint] left_hip_pitch_joint: semantics is_feedback=True ev={'E1_prehold_pos_std': 0.013906, 'E1_prehold_cmd_absmax': 0.0, 'E2_n_cmd_jumps': 60, 'E2_dpos_at_jump_max': 0.000191, 'E3_post_jump_tau_peak_med': 4.786323, 'E3_tau_quiet_median': 0.952377}
+[joint] left_hip_roll_joint: semantics is_feedback=True ev={'E1_prehold_pos_std': 0.01468, 'E1_prehold_cmd_absmax': 0.0, 'E2_n_cmd_jumps': 36, 'E2_dpos_at_jump_max': 0.000192, 'E3_post_jump_tau_peak_med': 2.515262, 'E3_tau_quiet_median': 1.001221}
+[joint] left_hip_yaw_joint: semantics is_feedback=True ev={'E1_prehold_pos_std': 0.00332, 'E1_prehold_cmd_absmax': 0.0, 'E2_n_cmd_jumps': 96, 'E2_dpos_at_jump_max': 0.000192, 'E3_post_jump_tau_peak_med': 6.471306, 'E3_tau_quiet_median': 0.073257}
+[joint] left_knee_pitch_joint: semantics is_feedback=True ev={'E1_prehold_pos_std': 0.013662, 'E1_prehold_cmd_absmax': 0.0, 'E2_n_cmd_jumps': 72, 'E2_dpos_at_jump_max': 0.002301, 'E3_post_jump_tau_peak_med': 9.084248, 'E3_tau_quiet_median': 1.050064}
+[joint] right_ankle_pitch_joint: semantics is_feedback=True ev={'E1_prehold_pos_std': 0.003998, 'E1_prehold_cmd_absmax': 0.0, 'E2_n_cmd_jumps': 54, 'E2_dpos_at_jump_max': 1e-06, 'E3_post_jump_tau_peak_med': 17.489408, 'E3_tau_quiet_median': 1.07561}
+[joint] right_ankle_roll_joint: semantics is_feedback=True ev={'E1_prehold_pos_std': 0.007251, 'E1_prehold_cmd_absmax': 0.0, 'E2_n_cmd_jumps': 96, 'E2_dpos_at_jump_max': 0.000177, 'E3_post_jump_tau_peak_med': 5.611729, 'E3_tau_quiet_median': 0.573064}
+[joint] right_hip_pitch_joint: semantics is_feedback=True ev={'E1_prehold_pos_std': 0.01138, 'E1_prehold_cmd_absmax': 0.0, 'E2_n_cmd_jumps': 60, 'E2_dpos_at_jump_max': 0.000192, 'E3_post_jump_tau_peak_med': 6.202686, 'E3_tau_quiet_median': 0.757019}
+[joint] right_hip_roll_joint: semantics is_feedback=True ev={'E1_prehold_pos_std': 0.008464, 'E1_prehold_cmd_absmax': 0.0, 'E2_n_cmd_jumps': 36, 'E2_dpos_at_jump_max': 0.000193, 'E3_post_jump_tau_peak_med': 6.471306, 'E3_tau_quiet_median': 0.561661}
+[joint] right_hip_yaw_joint: semantics is_feedback=True ev={'E1_prehold_pos_std': 0.003108, 'E1_prehold_cmd_absmax': 0.0, 'E2_n_cmd_jumps': 96, 'E2_dpos_at_jump_max': 0.000384, 'E3_post_jump_tau_peak_med': 6.373627, 'E3_tau_quiet_median': 0.170937}
+[joint] right_knee_pitch_joint: semantics is_feedback=True ev={'E1_prehold_pos_std': 0.00902, 'E1_prehold_cmd_absmax': 0.0, 'E2_n_cmd_jumps': 72, 'E2_dpos_at_jump_max': 0.003644, 'E3_post_jump_tau_peak_med': 8.571426, 'E3_tau_quiet_median': 0.708183}
+[joint] saved logs/joint_identify/gm_play/joint_params.pt
+{
+  "verdict": "FAIL",
+  "exit_code": 1,
+  "checks": [
+    {
+      "id": "J1_DYNAMICS_R2",
+      "ok": false,
+      "detail": "no serial-joint dynamics results"
+    },
+    {
+      "id": "J2_LR_SYMMETRY",
+      "ok": true,
+      "detail": "no comparable L/R pairs (degenerate)"
+    },
+    {
+      "id": "J3_GAIN_BAND",
+      "ok": false,
+      "detail": "no serial joints"
+    },
+    {
+      "id": "J4_DELAY",
+      "ok": false,
+      "detail": "no serial joints"
+    },
+    {
+      "id": "J5_CURRENT_MAP",
+      "ok": false,
+      "detail": "left_ankle_pitch_step_20260508_101737.csv kt R2=0.00; left_ankle_roll_step_20260508_103426.csv kt R2=0.00; left_hip_pitch_step_20260509_093047.csv kt R2=0.00; left_hip_roll_step_20260509_094819.csv kt R2=0.00; left_hip_yaw_step_20260509_095216.csv kt R2=0.00; left_knee_pitch_step_20260509_091930.csv kt R2=0.00; right_ankle_pitch_step_20260508_103121.csv kt R2=0.00; right_ankle_roll_step_20260508_103829.csv kt R2=0.00; right_hip_pitch_step_20260509_093559.csv kt R2=0.00; right_hip_roll_step_20260509_094502.csv kt R2=0.00; right_hip_yaw_step_20260509_095656.csv kt R2=0.00; right_knee_pitch_step_20260509_092502.csv kt R2=0.00"
+    }
+  ],
+  "warnings": [],
+  "n_serial": 0,
+  "n_parallel_reported": 4,
+  "gates": {
+    "J1_r2_floor": {
+      "hip": 0.55,
+      "knee": 0.6
+    },
+    "J2_symmetry_tol": 0.35,
+    "J3_alpha_band": [
+      0.34,
+      0.71
+    ],
+    "J3_m1_max_dev": 0.15,
+    "J4_delay_ms": [
+      -5.0,
+      30.0
+    ],
+    "J5_kt_r2_min": 0.9
+  }
+}
+[joint] verdict: FAIL (exit 1)
+[joint] ERROR right_knee_pitch_step_20260509_092502.csv: module 'mujoco' has no attribute 'mjtDisableFlag'
+
+=== [finalize] SPI dataset (train + cross): /opt/conda/envs/pointfoot_legged_gym/bin/python spi_identify/scripts/prepare_dataset.py --config spi_identify/configs/x1_spi.yaml --out data/derived/x1_clips.npz --out-cross data/derived/x1_cross_clips.npz
+[prepare]   7 clips (dt=10.00 ms)
+[prepare] parsing (train) /workspace/X1_identify/data/raw/20260902_x1data/7500model_addDR/walk_diag_20260831_142556.csv
+[prepare]   51 clips (dt=10.00 ms)
+[prepare] parsing (train) /workspace/X1_identify/data/raw/20260902_x1data/7500model_addDR/walk_diag_20260901_155946.csv
+[prepare]   40 clips (dt=10.00 ms)
+[prepare] parsing (train) /workspace/X1_identify/data/raw/20260902_x1data/7500model_addDR/walk_diag_20260902_093745.csv
+[prepare]   11 clips (dt=10.00 ms)
+[prepare] parsing (train) /workspace/X1_identify/data/raw/20260902_x1data/7500model_addDR/walk_diag_20260902_094252.csv
+[prepare]   13 clips (dt=10.00 ms)
+[prepare] parsing (train) /workspace/X1_identify/data/raw/20260902_x1data/7500model/walk_diag_20260901_163320.csv
+[prepare]   8 clips (dt=10.00 ms)
+[prepare] parsing (cross) /workspace/X1_identify/data/raw/20260902_x1data/5999model/walk_diag_20260818_103839.csv
+[prepare]   13 clips (dt=10.00 ms)
+[prepare] parsing (cross) /workspace/X1_identify/data/raw/20260902_x1data/5999model/walk_diag_20260818_144943.csv
+[prepare]   9 clips (dt=10.00 ms)
+[prepare] parsing (cross) /workspace/X1_identify/data/raw/20260902_x1data/5999model/walk_diag_20260820_144337.csv
+[prepare]   13 clips (dt=10.00 ms)
+[prepare] parsing (cross) /workspace/X1_identify/data/raw/20260902_x1data/5999model/walk_diag_20260825_160521.csv
+[prepare]   6 clips (dt=10.00 ms)
+[prepare] parsing (cross) /workspace/X1_identify/data/raw/walk_diag_20260824_103222.csv
+[prepare]   10 clips (dt=10.00 ms)
+[prepare] saved 48 train clips -> data/derived/x1_clips.npz
+[prepare] saved 51 cross clips -> data/derived/x1_cross_clips.npz
+=== [finalize] SPI dataset (train + cross) rc=0
+
+=== [finalize] SPI validation (5 criteria, R8 params, re-baselined floors): /opt/conda/envs/pointfoot_legged_gym/bin/python spi_identify/scripts/validate_spi.py --config spi_identify/configs/x1_spi.yaml --dataset data/derived/x1_clips.npz --cross-dataset data/derived/x1_cross_clips.npz --params spi_identify/results/r8_newdata_identified_params.json --out-dir logs/spi_sysid
+[validate] cross-dataset: 51 clips (meta groups: ['5999model', '5999model', '5999model', '5999model', 'legacy_20260824'])
+{
+  "verdict": "FAIL",
+  "exit_code": 1,
+  "checks": [
+    {
+      "id": "EFFECTIVENESS",
+      "ok": true,
+      "detail": "val cost best=350946.7 vs nominal=1184627.3 (ratio 0.296 <= 0.7)"
+    },
+    {
+      "id": "PHYSICAL",
+      "ok": false,
+      "detail": "violations: {'base': {'inertia_xy': 0.017038209999999998}}"
+    },
+    {
+      "id": "ACCEL",
+      "ok": true,
+      "detail": "val accel RMS: best=12.21 nominal=17.289 m/s^2 (bar=min(15.0, max(12.7, 6.051))=12.7; floor branch=yes)"
+    },
+    {
+      "id": "ACTUATOR",
+      "ok": true,
+      "detail": "kappa_s=0.361 vs step-regression band [0.34, 0.71] (serial alpha: knee .55 / hip .34-.71)"
+    },
+    {
+      "id": "CROSS-DATASET",
+      "ok": true,
+      "detail": "cross-policy dataset cost ratio best/nominal=0.326 (<= 0.7); accel RMS best=14.476 nominal=22.262 m/s^2 (bar=14.800)"
+    }
+  ],
+  "warnings": [],
+  "credibility": {
+    "base.mass": "高",
+    "base.com": "中",
+    "base.inertia": "低",
+    "kappa.hip_pitch": "高",
+    "kappa.hip_rolleyaw": "高",
+    "kappa.knee": "高",
+    "kappa.ankle": "中",
+    "kappa_s": "中"
+  },
+  "costs": {
+    "train": {
+      "nominal": {
+        "quat": 2921.42,
+        "angvel": 64321.54,
+        "accel": 2155534.71,
+        "q": 60810.88,
+        "qd": 1306350.1,
+        "tau": 74915.64
+      },
+      "best": {
+        "quat": 3118.75,
+        "angvel": 6481.4,
+        "accel": 887046.77,
+        "q": 50876.06,
+        "qd": 36103.7,
+        "tau": 10807.12
+      }
+    },
+    "val": {
+      "nominal": {
+        "quat": 1130.94,
+        "angvel": 24623.33,
+        "accel": 623241.72,
+        "q": 17342.23,
+        "qd": 489211.73,
+        "tau": 29077.36
+      },
+      "best": {
+        "quat": 1208.98,
+        "angvel": 2871.08,
+        "accel": 310836.41,
+        "q": 18018.11,
+        "qd": 13993.56,
+        "tau": 4018.56
+      }
+    }
+  },
+  "accel_rms_val": 12.21,
+  "cross_dataset": {
+    "cost_ratio": 0.3262,
+    "accel_rms_best": 14.476,
+    "accel_rms_nominal": 22.262,
+    "accel_bar": 14.8,
+    "n_steps": 7445
+  },
+  "criteria": {
+    "effective_ratio": 0.7,
+    "accel_rms_max": 15.0,
+    "accel_improve_ratio": 0.35,
+    "accel_rms_floor": 12.7,
+    "actuator_kappa_s_band": [
+      0.34,
+      0.71
+    ]
+  }
+}
+[validate] verdict: FAIL (exit 1)
+[validate] report -> logs/spi_sysid/validation.json
+=== [finalize] SPI validation (5 criteria, R8 params, re-baselined floors) rc=1
+
+[finalize] joint rc=1 | spi rc=1
+[finalize] FINAL: FAIL

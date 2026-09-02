@@ -1,0 +1,45 @@
+{
+  "best_params": {
+    "bodies": {
+      "base": {
+        "mass": 4.031211710173407,
+        "com": [
+          -0.01114752,
+          0.05523581,
+          0.00649121
+        ],
+        "inertia": [
+          [
+            0.07653347,
+            -0.029999999999999964,
+            -0.01323961000000001
+          ],
+          [
+            -0.029999999999999964,
+            0.10682136999999979,
+            -0.0010266800000000155
+          ],
+          [
+            -0.01323961000000001,
+            -0.0010266800000000155,
+            0.15859107000000003
+          ]
+        ]
+      }
+    },
+    "motors": {
+      "hip_pitch": 86.33629617583729,
+      "hip_rolleyaw": 33.62202810365223,
+      "knee": 127.43404140013456,
+      "ankle": 20.388400010459794
+    },
+    "kappa_s": 0.3610915304729686
+  },
+  "source": "R8 (TASK_20260902_192) log-parsed + physical-domain projection (offdiag xy -0.0470 -> -0.03; Oaki-2026-type SDP projection, see param_space.project_to_physical_domain + unit tests)",
+  "pre_projection_violations": {
+    "base": {
+      "inertia_xy": 0.01703821
+    }
+  },
+  "history": []
+}
