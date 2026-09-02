@@ -32,13 +32,24 @@ def mujoco_available() -> bool:
         return False
 
 
+def _contact_disable_flag(mujoco):
+    """mjDSBL_CONTACT across mujoco generations: 3.x names it mjtDisableFlag,
+    2.x (e.g. the gradmotion image's 2.3.6) names it mjtDisableBit."""
+    for enum_name in ("mjtDisableFlag", "mjtDisableBit"):
+        enum = getattr(mujoco, enum_name, None)
+        if enum is not None and hasattr(enum, "mjDSBL_CONTACT"):
+            return int(enum.mjDSBL_CONTACT)
+    raise RuntimeError("mjDSBL_CONTACT not found in either mjtDisableFlag "
+                       "or mjtDisableBit (unsupported mujoco)")
+
+
 def build_gravity_lut(joint_name, model_path=None, q_range=None, n=200):
     """Gravity-torque LUT g(q) [Nm] for one joint (suspended, contact-free)."""
     import mujoco
 
     path = Path(model_path) if model_path else DEFAULT_MODEL_PATH
     model = mujoco.MjModel.from_xml_path(str(path))
-    model.opt.disableflags |= int(mujoco.mjtDisableFlag.mjDSBL_CONTACT)
+    model.opt.disableflags |= _contact_disable_flag(mujoco)
     jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, str(joint_name))
     if jid < 0:
         raise ValueError("joint '%s' not found in model %s" % (joint_name, path))
