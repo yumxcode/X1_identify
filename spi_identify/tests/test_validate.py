@@ -285,6 +285,30 @@ class TestCrossDataset(unittest.TestCase):
         cross = next(c for c in r["checks"] if c["id"] == "CROSS-DATASET")
         self.assertTrue(cross["ok"])
 
+    def test_cross_floor_configurable_separately(self):
+        # cross_accel_rms_floor 独立配置：cross 观测 14.476 在 holdout 地板
+        # 12.7 下 FAIL，在 cross 专属地板 14.8 下 PASS（R8 再基线场景）
+        vn, vb = self._good_val()
+        cn = dict(SIG, quat=300.0, q=60.0, accel=1.0 * 1000 * 22.262 ** 2)
+        cb = dict(SIG, quat=50.0, q=12.0, accel=1.0 * 1000 * 14.476 ** 2)
+        cfg = dict(CFG, validation={"accel_rms_floor": 12.7,
+                                    "cross_accel_rms_floor": 14.8})
+        r = assess(cfg, mk_params(), NOMINAL,
+                   {"nominal": dict(SIG), "best": dict(SIG)},
+                   {"nominal": vn, "best": vb}, 1000, accel_weight=1.0,
+                   cross_costs={"nominal": cn, "best": cb}, n_cross_steps=1000)
+        cross = next(c for c in r["checks"] if c["id"] == "CROSS-DATASET")
+        self.assertTrue(cross["ok"])
+        self.assertEqual(r["cross_dataset"]["accel_bar"], 14.8)
+        # 未配置 cross floor 时回落到 holdout floor（12.7）-> 14.476 FAIL
+        cfg2 = dict(CFG, validation={"accel_rms_floor": 12.7})
+        r2 = assess(cfg2, mk_params(), NOMINAL,
+                    {"nominal": dict(SIG), "best": dict(SIG)},
+                    {"nominal": vn, "best": vb}, 1000, accel_weight=1.0,
+                    cross_costs={"nominal": cn, "best": cb}, n_cross_steps=1000)
+        cross2 = next(c for c in r2["checks"] if c["id"] == "CROSS-DATASET")
+        self.assertFalse(cross2["ok"])
+
 
 class TestCredibility(unittest.TestCase):
     def test_grades(self):

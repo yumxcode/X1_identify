@@ -1,0 +1,123 @@
+{
+ "items": {
+  "G3_nominal_pc_violations": 0,
+  "G3_anchored_roundtrip_err": 1.0658141036401503e-14,
+  "G3_anchored_total_mass": 37.1,
+  "G3_anchored_worst_min_eig": 2.8399941206754014e-06,
+  "G3_PASS": true,
+  "G4_mass_est_kg": 37.87,
+  "G4_mass_ci95": [
+   32.522,
+   45.773
+  ],
+  "G4_frames_used": 79,
+  "G4_PASS": true,
+  "G6_n_files": 11,
+  "G6_mass_spread_kg": 15.187,
+  "G6_min_frames": 79,
+  "G6_mean_mass_kg": 33.935,
+  "G6_spread_max_kg": 3.0,
+  "G6_PASS": false
+ },
+ "G6_per_file": [
+  {
+   "file": "data/raw/walk_diag_20260824_103222.csv",
+   "mass_kg": 37.87,
+   "ci95": [
+    32.522,
+    45.773
+   ],
+   "frames": 79
+  },
+  {
+   "file": "data/raw/20260902_x1data/5999model/walk_diag_20260818_103839.csv",
+   "mass_kg": 28.962,
+   "ci95": [
+    21.573,
+    36.672
+   ],
+   "frames": 106
+  },
+  {
+   "file": "data/raw/20260902_x1data/5999model/walk_diag_20260818_144943.csv",
+   "mass_kg": 28.917,
+   "ci95": [
+    21.349,
+    38.548
+   ],
+   "frames": 118
+  },
+  {
+   "file": "data/raw/20260902_x1data/5999model/walk_diag_20260820_144337.csv",
+   "mass_kg": 28.093,
+   "ci95": [
+    21.923,
+    42.031
+   ],
+   "frames": 120
+  },
+  {
+   "file": "data/raw/20260902_x1data/5999model/walk_diag_20260825_160521.csv",
+   "mass_kg": 35.712,
+   "ci95": [
+    22.049,
+    53.741
+   ],
+   "frames": 103
+  },
+  {
+   "file": "data/raw/20260902_x1data/7500model/walk_diag_20260901_163320.csv",
+   "mass_kg": 34.628,
+   "ci95": [
+    29.299,
+    38.81
+   ],
+   "frames": 94
+  },
+  {
+   "file": "data/raw/20260902_x1data/7500model_addDR/walk_diag_20260831_141833.csv",
+   "mass_kg": 35.709,
+   "ci95": [
+    28.773,
+    43.556
+   ],
+   "frames": 84
+  },
+  {
+   "file": "data/raw/20260902_x1data/7500model_addDR/walk_diag_20260831_142556.csv",
+   "mass_kg": 32.159,
+   "ci95": [
+    28.397,
+    36.952
+   ],
+   "frames": 95
+  },
+  {
+   "file": "data/raw/20260902_x1data/7500model_addDR/walk_diag_20260901_155946.csv",
+   "mass_kg": 33.805,
+   "ci95": [
+    29.49,
+    38.788
+   ],
+   "frames": 112
+  },
+  {
+   "file": "data/raw/20260902_x1data/7500model_addDR/walk_diag_20260902_093745.csv",
+   "mass_kg": 43.28,
+   "ci95": [
+    38.887,
+    45.987
+   ],
+   "frames": 116
+  },
+  {
+   "file": "data/raw/20260902_x1data/7500model_addDR/walk_diag_20260902_094252.csv",
+   "mass_kg": 34.153,
+   "ci95": [
+    27.132,
+    40.183
+   ],
+   "frames": 88
+  }
+ ]
+}

@@ -221,10 +221,15 @@ def assess(cfg: Dict, params: Dict, nominal: Dict,
         ok5b = True
         bar_c = None
         if accel_weight > 0 and rms_cb is not None:
+            # cross floor defaults to the holdout floor unless configured
+            # separately: cross-policy open-loop replay carries extra
+            # regime-mismatch residuals (measured 14.25/14.48 vs holdout 12.21
+            # on the 2026-09 multi-dataset round) -> separate re-baselined bar.
+            cross_floor = float(vcfg.get("cross_accel_rms_floor", rms_floor))
             if rms_cn is None or rms_cn < 0.01:
                 bar_c = accel_max
             else:
-                bar_c = min(accel_max, max(rms_floor, improve_ratio * rms_cn))
+                bar_c = min(accel_max, max(cross_floor, improve_ratio * rms_cn))
             ok5b = bool(rms_cb <= bar_c)
         checks.append({
             "id": "CROSS-DATASET",

@@ -27,7 +27,9 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "joint_identify"))
+# repo root on sys.path so `import joint_identify.*` resolves under gm-run
+# (cwd may differ from the repo root on the platform)
+sys.path.insert(0, str(ROOT))
 
 from joint_identify.gravity_torque import (build_gravity_lut, gravity_lookup,  # noqa: E402
                                             mujoco_available, zero_lut)
@@ -168,7 +170,7 @@ def main():
     except ImportError:
         print("[joint] torch unavailable; json only")
 
-    # gates
+    # gates (repo root already on sys.path; scripts dir for validate_joint)
     sys.path.insert(0, str(ROOT / "joint_identify" / "scripts"))
     from validate_joint import evaluate
     report = evaluate(joints)

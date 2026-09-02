@@ -18,16 +18,19 @@ cd "$REPO"
 # mode: full pipeline (default) or --validate-only (dataset + unittests +
 # validation + apply; skips the ~15 min CMA-ES identification, reuses
 # committed params from spi_identify/results/)
-MODE="${1:-full}"
-shift || true
-# optional --params-file=PATH (validate-only): which committed params file to
-# revalidate (default spi_identify/results/identified_params.json). Explicit flag
-# instead of an env var because the platform injects neither env nor shell
-# syntax into startScript.
+# Args are passed through to run_spi.py (e.g. --seed N --n-trials N) or, in
+# validate-only mode, --params-file=PATH selects the committed params file.
+# NOTE: MODE matching is flag-aware ("--seed 3" must NOT be taken for the
+# mode; historically MODE="${1:-full}" swallowed the first flag, so all three
+# T2 seed tasks ran the identical config -- see methods_log 2026-09-02).
+MODE="full"
 PARAMS_FILE=""
+PASSTHROUGH=()
 for a in "$@"; do
   case "$a" in
+    --validate-only) MODE="--validate-only" ;;
     --params-file=*) PARAMS_FILE="${a#*=}" ;;
+    *) PASSTHROUGH+=("$a") ;;
   esac
 done
 if [ "$MODE" = "--validate-only" ]; then
@@ -64,7 +67,7 @@ if [ "$MODE" != "--validate-only" ]; then
   python spi_identify/scripts/run_spi.py \
     --config spi_identify/configs/x1_spi.yaml \
     --dataset data/derived/x1_clips.npz \
-    --out-dir logs/spi_sysid "$@"
+    --out-dir logs/spi_sysid "${PASSTHROUGH[@]}"
 else
   echo "remote_sysid: [validate-only] params must come from a previous run"
   # fresh container has no logs/ — fall back to a repo-committed params file

@@ -1,0 +1,30 @@
+{
+  "best_params": {
+    "bodies": {
+      "base": {
+        "mass": 4.031211710173407,
+        "com": "[-0.01114752  0.05523581  0.00649121]",
+        "inertia": "[[ 0.07653347 -0.04703821 -0.01323961]\n [-0.04703821  0.10682137 -0.00102668]\n [-0.01323961 -0.00102668  0.15859107]]"
+      }
+    },
+    "motors": {
+      "hip_pitch": 86.33629617583729,
+      "hip_rolleyaw": 33.62202810365223,
+      "knee": 127.43404140013456,
+      "ankle": 20.388400010459794
+    },
+    "kappa_s": 0.3610915304729686
+  },
+  "source": "TASK_20260902_192 (log-parsed; 3 tasks identical due to seed-pass bug)",
+  "train_best_cost": 1023465.2198,
+  "holdout": {
+    "eff_ratio": 0.296,
+    "accel_rms_best": 12.21,
+    "accel_rms_nominal": 17.289
+  },
+  "cross": {
+    "ratio": 0.326,
+    "accel_rms_best": 14.476,
+    "accel_rms_nominal": 22.262
+  }
+}
