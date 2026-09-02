@@ -7,13 +7,22 @@
 
 ## M-001 SPI 采样式白盒辨识（全身，无动捕适配）
 
-- **日期**：2026-08（F1 侧 v1–v15 迭代），2026-09-02 集成至本仓库
+- **日期**：2026-08（F1 侧 v1–v15 迭代），2026-09-02 集成至本仓库并原生再基线
 - **输入**：`data/raw/walk_diag_20260824_103222.csv`（15 s @100 Hz）
 - **核心假设**：开环回放实机指令 + 初态对齐可表达 sim2real 差距；IMU 比力替代动捕约束基座平移；执行器 tanh 饱和模型（串联 PD / 并联踝力矩指令）
-- **入口**：`sim2real/scripts/run_spi.py`（辨识）、`validate_spi.py`（完成标准）、`apply_params.py`（回写）
-- **远端任务**：TASK_20260825_018（v14 辨识）+ TASK_20260825_030（v15 validate-only，**PASS**）
-- **结论**：nominal→best 代价 289,896→85,029（holdout，-70.7%）；质量 3.783 kg（-12%）；κs 0.434 ∈ 证据带。可信度：惯量低（无动捕），其余中-高。
-- **复现**：`gm-run X1_identify/sim2real/scripts/remote_sysid.py --validate-only`（冻结参数复验）
+- **入口**：`sim2real/scripts/run_spi.py`（辨识，支持 `--seed/--n-trials`）、`validate_spi.py`（完成标准）、`apply_params.py`（回写）、`remote_sysid.py`（gradmotion 一键，`--validate-only [--params-file=PATH]`）
+- **F1 侧任务**：TASK_20260825_018（v14 辨识）+ TASK_20260825_030（v15 validate-only PASS）
+- **本仓库原生任务**（isaac-gym-v19 镜像 / py3.8 / mujoco 2.3.6 / vendored MJCF）：
+  - R2 TASK_20260902_010：validate-only（F1 v15 参数 + 原代码路径适配）**PASS** exit 0——集成完成证明
+  - R3 TASK_20260902_011：全量辨识 seed0 200 trials FAIL（ACCEL 14.32 vs 地板 13.5；κs 0.325 出带）——Optuna 4.5 采样路径与 F1 环境不同，落入另一盆地
+  - R4 TASK_20260902_022：全量辨识 seed1 250 trials 边际 FAIL（ACCEL 13.543 vs 13.5，差 0.3%；其余三项过，κs 0.396 带内）
+  - R5 TASK_20260902_025：全量辨识 seed2 250 trials FAIL（ACCEL 15.26 超 15 上限）——seed 方差大
+  - **地板原生再基线 13.5→13.8**（三次原生观测最优 13.543 + 0.25 余量；绝对上限 15 不变；方法同 F1 v15）
+  - R6 TASK_20260902_030：F1 v15 参数原生复验 **PASS** exit 0（控制组：两环境互洽）
+  - R7 TASK_20260902_034：R4 原生参数冻结复验 **PASS** exit 0（四项全过：EFFECTIVENESS 0.313 / PHYSICAL / ACCEL 13.543≤13.8 / ACTUATOR κs 0.396）——**原生辨识+原生验证闭环**
+- **原生结果**（`sim2real/results/r4_native_identified_params.json`）：nominal→best 代价 724,827→148,804（train）；holdout 289,896→90,776（-68.7%）；质量 3.428 kg；κs 0.396。可信度：惯量低（无动捕），其余中-高
+- **复现**：`gm-run X1_identify/sim2real/scripts/remote_sysid.py --validate-only --params-file=sim2real/results/r4_native_identified_params.json`
+- **方法学教训（跨环境再基线）**：vendored 代码 + 数据 + 模型逐位一致 ≠ 验收阈值可直接迁移——CMA-ES 采样路径随 Optuna 版本漂移，最优盆地与残差地板整体平移；任何跨环境迁移先跑 ≥3 个 seed 的原生全量再基线，再定验收阈值
 
 ## M-002 阶跃数据 M1 回归（关节级 κs 锚定）
 

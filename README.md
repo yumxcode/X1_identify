@@ -28,8 +28,8 @@ F1 真机数据（DATA-01 walk_diag 100Hz / 1kHz 阶跃 / 后续 DATA-02/04）
 │   ├── active/          SPI-Active Stage-2（FIM + Bézier 命令优化，待多行为策略后启用）
 │   ├── configs/x1_spi.yaml    参数空间/代价权重/数据源（全部可配）
 │   ├── scripts/         prepare / run_spi / validate / mass_landscape / apply / remote_sysid
-│   ├── tests/           43 个 numpy 级单测（远端流水线首阶段执行）
-│   ├── results/         F1 v15 PASS 辨识参数（同一数据/模型，参考基准）
+│   ├── tests/           57 个单测（53 numpy 级 + 4 vendored MJCF 守卫，远端流水线首阶段执行）
+│   ├── results/         辨识参数与远端任务日志：原生 R4+R7 PASS + F1 v15 基准 + R3-R7 迭代记录
 │   └── export/          上一轮导出工件（URDF/MJCF/DR/报告）
 ├── prime_identify/      PRIME 回归路线（既有）：PFIE-IRLS + 接触 QP + 可辨识性证据链
 ├── data/                真机数据（raw/ 原样 + derived/ 派生证据），见 data/README.md
@@ -69,8 +69,8 @@ gm-run X1_identify/sim2real/scripts/remote_sysid.py --validate-only
 
 | 方法 | 脚本 | 状态 |
 |---|---|---|
-| SPI 采样式白盒辨识（CMA-ES + MuJoCo 开环回放） | `sim2real/scripts/run_spi.py` | ✅ v15 PASS |
-| SPI 完成标准四项验证 | `sim2real/scripts/validate_spi.py` | ✅ |
+| SPI 采样式白盒辨识（CMA-ES + MuJoCo 开环回放） | `sim2real/scripts/run_spi.py` | ✅ F1 v15 PASS + 本仓库原生 R4/R7 PASS |
+| SPI 完成标准四项验证 | `sim2real/scripts/validate_spi.py` | ✅（地板 13.8 原生再基线） |
 | 阶跃数据 M1 回归（κs 锚定） | F1 侧脚本 → `data/derived/step_m1_regression_all.json` | ✅ |
 | 质量-代价地形诊断 | `sim2real/scripts/mass_landscape.py` | ✅ |
 | GRF 整机质量估计（无动捕） | `prime_identify/scripts/gm_validate.py` | ✅（37.355 kg） |

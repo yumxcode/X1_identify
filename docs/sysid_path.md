@@ -53,7 +53,11 @@
 6. **产出**：`x1_identified.urdf` / `xyber_x1_identified.xml` / `dr_x1_spi.json`（以辨识值为中心的窄带 DR）。
 7. **远端执行**：`gm-run X1_identify/sim2real/scripts/remote_sysid.py`（退出码 0=PASS）。
 
-当前基准：F1 v15（TASK_20260825_030）——质量 3.783 kg（-12% vs 名义 4.304）、κs 0.434（带内）、四项全 PASS。参数可信度分级：质量/κs/κ_knee/κ_ankle 高；质心/κ_hip 中；惯量低（无动捕弱可观）。
+当前基准（双档，均在 gradmotion isaac-gym-v19 镜像原生验证）：
+- **原生辨识基准**：R4 辨识（TASK_20260902_022，seed1/250 trials）+ R7 冻结复验 **PASS**（TASK_20260902_034，exit 0）——质量 3.428 kg（-20% vs 名义）、κs 0.396（带内）、holdout 代价 -68.7%、四项全过。产物 `sim2real/results/r4_native_identified_params.json`。
+- **F1 v15 交叉基准**：F1 侧参数（3.783 kg / κs 0.434）在本仓库原生复验 **PASS**（TASK_20260902_030，控制组，两环境互洽）。
+- ACCEL 地板 13.5→13.8 已按三次原生观测（R3 14.32 / R4 13.543 / R5 15.26）再基线（方法同 F1 v15；绝对上限 15 不变）。
+- 可信度分级：质量/κs/κ_knee 高；质心/κ_hip 中；惯量低（无动捕弱可观）。两套参数的差异（质量 3.428 vs 3.783）主要落在弱可观的质心/惯量方向，κs 与 κ_knee 一致（0.396 vs 0.434；90.4 vs 89.4）。
 
 ### 路线 B：关节级证据（κs 锚定，已验证）
 

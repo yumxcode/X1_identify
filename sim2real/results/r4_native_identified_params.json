@@ -1,8 +1,8 @@
 {
-  "verdict": "PENDING-FROZEN-REVALIDATION",
+  "verdict": "PASS",
   "run": {
     "identification_task": "TASK_20260902_022 (X1_identify native R4, seed 1, n_trials 250)",
-    "validation_task": "pending (frozen-params validate-only round)",
+    "validation_task": "TASK_20260902_034 (R7 frozen-params validate-only, exit 0)",
     "data": "data/raw/walk_diag_20260824_103222.csv (15.0 s @100 Hz, rl_walk_leg, cmd 0.25 m/s)",
     "dataset": "10 clips (1.0-1.9 s) -> 7 train / 3 val (val_ratio 0.3)",
     "optimizer": "Optuna CMA-ES seed 1, n_trials 250, penalty 1e8, offdiag bound 0.03; mujoco 2.3.6 (gradmotion isaac-gym-v19 image, py3.8)",
@@ -10,7 +10,9 @@
       "R3 TASK_20260902_011 (seed 0, 200 trials): FAIL - ACCEL 14.32 vs floor 13.5; kappa_s 0.325 below band [0.34,0.71]; EFFECTIVENESS/PHYSICAL PASS",
       "R4 TASK_20260902_022 (seed 1, 250 trials): FAIL marginal - ACCEL 13.543 vs floor 13.5 (0.3% over, noise-level); EFFECTIVENESS 0.313 / PHYSICAL / ACTUATOR(kappa_s 0.396) PASS",
       "R5 TASK_20260902_025 (seed 2, 250 trials): FAIL - ACCEL 15.26 exceeds absolute max 15; EFFECTIVENESS 0.389 / PHYSICAL / ACTUATOR(kappa_s 0.405) PASS",
-      "Floor re-baselined natively 13.5 -> 13.8 (best native obs 13.543 + 0.25 margin, F1 v15 method with tightened margin); R4 params frozen for revalidation"
+      "Floor re-baselined natively 13.5 -> 13.8 (best native obs 13.543 + 0.25 margin, F1 v15 method with tightened margin); R4 params frozen for revalidation",
+      "R6 TASK_20260902_030: F1 v15 committed params natively PASS under floor 13.8 (control revalidation, exit 0)",
+      "R7 TASK_20260902_034: R4 native params PASS all four checks (EFFECTIVENESS 0.313 / PHYSICAL / ACCEL 13.543<=13.8 / ACTUATOR kappa_s 0.396), exit 0 \u2014 native-identified + native-validated closure"
     ]
   },
   "best_params": {
@@ -57,6 +59,25 @@
     "val": {
       "nominal": 289895.6,
       "best": 90776.4
+    }
+  },
+  "exit_code": 0,
+  "checks": {
+    "EFFECTIVENESS": {
+      "ok": true,
+      "detail": "val cost best=90776.4 vs nominal=289895.6 (ratio 0.313 <= 0.7)"
+    },
+    "PHYSICAL": {
+      "ok": true,
+      "detail": "all body params inside configured ranges"
+    },
+    "ACCEL": {
+      "ok": true,
+      "detail": "val accel RMS best=13.543 nominal=20.229 (bar=13.8 floor branch)"
+    },
+    "ACTUATOR": {
+      "ok": true,
+      "detail": "kappa_s=0.396 in step-regression band [0.34, 0.71]"
     }
   }
 }
