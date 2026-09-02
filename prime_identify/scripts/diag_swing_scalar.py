@@ -22,7 +22,7 @@ from selftest_sim import perturb_pi_from, BODY_NAME, KNEE_L, KNEE_R
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 URDF = os.path.join(REPO, "X1_train", "resources", "robots", "x1", "urdf", "x1.urdf")
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-CSV = os.path.join(REPO, "x1_data", "walk_diag_20260824_103222.csv")
+CSV = os.path.join(REPO, "data/raw", "walk_diag_20260824_103222.csv")
 
 dyn = X1Dynamics(URDF)
 wd = load_walk_diag(CSV, dyn)

@@ -11,7 +11,7 @@ import pinocchio as pin
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.join(REPO, "prime_identify"))
 URDF = os.path.join(REPO, "X1_train", "resources", "robots", "x1", "urdf", "x1.urdf")
-CSV = os.path.join(REPO, "x1_data", "walk_diag_20260824_103222.csv")
+CSV = os.path.join(REPO, "data/raw", "walk_diag_20260824_103222.csv")
 LEG_PAIRS = [
     ("left_hip_pitch_joint", "right_hip_pitch_joint"),
     ("left_hip_roll_joint", "right_hip_roll_joint"),

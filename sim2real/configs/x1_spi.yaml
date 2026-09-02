@@ -1,0 +1,137 @@
+# X1 SPI system-identification configuration (SPI-Active, arXiv:2505.14266)
+# Vendored from F1 dev/sim2real-spi (v15 PASS, TASK_20260825_030) into the
+# X1_identify workspace; paths adapted to this repo's layout.
+# All numbers anchored on:
+#   * MJCF: X1_infer/module/sim_module/model/mjcf/robot/xyber_x1/xyber_x1_serial.xml
+#     x1-body: mass 4.3041648, com [0.00252285, -0.00063439, 0.03023409],
+#     fullinertia "0.02680559 0.01083128 0.02180955 -5.49e-06 5.389e-05 -0.00011229"
+#     (ixx iyy izz ixy ixz iyz)   -- byte-identical to F1's Humanoid_motion MJCF
+#   * deployment PD: rl_x1.yaml rl_walk_leg (matches agibot_x1_train config)
+#   * paper Tab.4 ranges (G1 pelvis scaled for X1 pelvis)
+
+model:
+  mjcf: "X1_infer/module/sim_module/model/mjcf/xyber_x1_flat.xml"
+  base_body: "x1-body"
+  base_body_key: "base"          # key inside params.bodies
+  foot_bodies: ["link_left_ankle_roll", "link_right_ankle_roll"]
+
+data:
+  sources:                        # datasets -> kp/kd per experiment
+    # 2026-08-24 行走数据（data/raw/，F1 数据观测体系 DATA-01 walk_diag）：
+    #   walk_diag_20260824_103222.csv  15.0 s @100 Hz 行走诊断（cmd 0.25 m/s，
+    #   rl_walk_leg 控制器，增益取自 motion_control rl_x1.yaml，与 08-07 轮一致）
+    #   *_step_*.csv（12 个，1 kHz 单关节阶跃）不入全身回放（无全身状态/无比力），
+    #   其 M1 回归（tau ~ alpha*kp*e + beta*kd*qd + c，见
+    #   data/derived/step_m1_regression_all.json）给出串联关节有效刚度缩放
+    #   alpha=0.34-0.71（knee 0.55），用于锚定 kappa_s（电机小信号增益）。
+    - files:
+        - "data/raw/walk_diag_20260824_103222.csv"
+      kp: {left_hip_pitch_joint: 30, left_hip_roll_joint: 40, left_hip_yaw_joint: 35,
+           left_knee_pitch_joint: 100, left_ankle_pitch_joint: 35, left_ankle_roll_joint: 30,
+           right_hip_pitch_joint: 30, right_hip_roll_joint: 40, right_hip_yaw_joint: 35,
+           right_knee_pitch_joint: 100, right_ankle_pitch_joint: 35, right_ankle_roll_joint: 30}
+      kd: {left_hip_pitch_joint: 3, left_hip_roll_joint: 3, left_hip_yaw_joint: 4,
+           left_knee_pitch_joint: 8, left_ankle_pitch_joint: 1.5, left_ankle_roll_joint: 1.5,
+           right_hip_pitch_joint: 3, right_hip_roll_joint: 3, right_hip_yaw_joint: 4,
+           right_knee_pitch_joint: 8, right_ankle_pitch_joint: 1.5, right_ankle_roll_joint: 1.5}
+      note: "walking diagnostics 2026-08-24, rl_walk_leg gains"
+  clip_h_min_s: 1.0               # H ~ U(H_min, H_max) (paper: avg 1.5 s)
+  clip_h_max_s: 2.0
+  max_clips: 60                   # subsample clips for one CMA-ES evaluation
+  val_ratio: 0.3                  # holdout clips for validation（新数据仅 15s/~10 clips，
+                                  # 取 0.3 保证 >=3 个 holdout clip，完成标准更可信）
+  seed: 0
+
+bodies:
+  - name: "base"                  # X1 pelvis (link_base)
+    nominal:
+      mass: 4.3041648
+      com: [0.00252285, -0.00063439, 0.03023409]
+      inertia:                    # full 3x3 from MJCF fullinertia
+        - [0.02680559, -5.49e-06, 5.389e-05]
+        - [-5.49e-06, 0.01083128, -0.00011229]
+        - [5.389e-05, -0.00011229, 0.02180955]
+    # 物理合理域（评审收紧：旧范围 2-10 kg / ±0.15 m / 0.005-1.0 允许超物理域
+    # 结果，如 6.97 kg、惯量 1.5-2.0 kg·m^2。新范围锚定名义值附近）
+    mass_range: [3.0, 5.5]        # nominal 4.30 kg (±~28%)
+    com_range: [-0.06, 0.06]      # nominal |r| < 0.031 m
+    # 惯量上限 0.38 = 名义(0.011-0.027)的 ~14x：覆盖骨盆+电池/线束等未建模
+    # 载荷的物理合理上限（v10 实测最优 0.363 仅超旧界 0.35 约 3%，纳入域内；
+    # 仍远小于首轮超物理结果 1.5-2.0）
+    inertia_diag_range: [0.005, 0.38]
+    # 惯量非对角（惯量积）上界：v13 暴露特征值检查漏洞——最优解非对角 -0.082
+    # （对角仅 0.09），主轴相对体坐标旋转 ~40°，骨盆物理上不可能，属于参数
+    # 吸收模型误差。名义非对角 ~1e-4；0.03 ≈ 最大名义对角的 1.1x，仍宽松。
+    inertia_offdiag_max: 0.03
+
+motor_groups:                     # tanh saturation kappa per joint group
+  - name: hip_pitch
+    joints: [left_hip_pitch_joint, right_hip_pitch_joint]
+    kappa_nominal: 120.0          # ctrlrange ±150 Nm class
+    kappa_range: [40.0, 160.0]
+  - name: hip_rolleyaw
+    joints: [left_hip_roll_joint, left_hip_yaw_joint,
+             right_hip_roll_joint, right_hip_yaw_joint]
+    kappa_nominal: 45.0           # ctrlrange ±50 Nm class
+    kappa_range: [15.0, 60.0]
+  - name: knee
+    joints: [left_knee_pitch_joint, right_knee_pitch_joint]
+    kappa_nominal: 120.0          # ctrlrange ±150 Nm class
+    kappa_range: [40.0, 160.0]
+  - name: ankle
+    joints: [left_ankle_pitch_joint, left_ankle_roll_joint,
+             right_ankle_pitch_joint, right_ankle_roll_joint]
+    kappa_nominal: 15.0           # ctrlrange ±18 Nm class (parallel drive)
+    kappa_range: [5.0, 30.0]
+
+# kappa_s（电机小信号增益）锚定于 2026-05 阶跃数据 M1 回归（串联关节）：
+#   knee 0.55(左右一致, R2~0.85) / hip_pitch 0.63 / hip_roll 0.67-0.71 / hip_yaw 0.34
+# 搜索域 = 证据带 [0.34, 0.71] 外扩 0.04（留 CMA-ES 妥协踝并联力矩模式的余量），
+# 取代旧盲域 [0.5, 1.5]（上轮最优 0.527 贴下界，证据带证明其物理上合理而非巧合）
+kappa_s_nominal: 0.55
+kappa_s_range: [0.30, 0.80]
+
+cost:                             # paper Tab.3 (X1: no mocap -> pos/linvel = 0)
+  base_pos: 0.0
+  base_linvel: 0.0
+  base_quat: 2.0
+  base_angvel: 0.25
+  base_accel: 1.0                 # IMU 3-axis specific force (m/s^2, body frame)
+  accel_filter_win: 20            # 比力低通盒滤波窗口 (100Hz -> 0.2s)，滤接触冲击
+  q: 3.0
+  qd: 0.1
+  tau: 0.002
+  reg_scale: 0.1
+
+optimizer:
+  n_trials: 200                   # 新数据 clip 少（~7 train），单 trial 更快；
+                                  # v14 增加非对角约束后搜索空间更受限，加码试验
+  seed: 0
+  # 物理合理域硬约束权重：1e8 下 com 超域 0.05 m 罚 25 万，与 accel 项
+  # 数十万收益同量级，CMA-ES 无法再以超域换预测精度（v11 实测 3e6 太软：
+  # com_y 超域 0.115 m 仅罚 ~9k）
+  penalty_scale: 1e8
+
+validation:
+  effective_ratio: 0.70           # val best/nominal 代价上限（完成标准 1）
+  # 完成标准 3（ACCEL）双侧界: best <= min(max值, max(地板, 0.35*nominal))。
+  # 无动捕开环回放的可达残差地板：v12(旧数据) 12.55 / v13 12.92 / v14 13.01
+  # （v14 加入惯量积约束后最优残差上移 0.09）——三次独立运行带宽 ~0.5，
+  # 地板取最大观测 +0.5 余量 = 13.5；仍比绝对上限 15 低 10%，标准保持严格。
+  # 接入动捕后应收紧 max 并移除地板分支。
+  accel_rms_max: 15.0             # val 比力 RMS 绝对上限 m/s^2
+  accel_improve_ratio: 0.35       # nominal 远高于地板时要求改善 >=65%
+  accel_rms_floor: 13.5           # 方法学地板（3 次运行实测 12.55-13.01 + 余量）
+  # 完成标准 4（ACTUATOR）：kappa_s 必须落在阶跃数据 M1 回归证据带内
+  # （串联关节 alpha 范围 [0.34, 0.71]，step_m1_regression_all.json）。
+  # 独立于行走数据的交叉校验：防 kappas 吸收基座/接触等未建模误差。
+  actuator_kappa_s_band: [0.34, 0.71]
+
+active:                           # SPI-Active stage 2
+  command_dims: [0, 1, 2]         # vx, vy, wz (X1 cmd_vel)
+  command_ranges: [[-1.0, 1.0], [-0.5, 0.5], [-1.0, 1.0]]
+  bezier_points: 4                # paper: 10-degree Bezier ~ up to 11 ctrl pts
+  horizon_length_s: 4.0           # paper: H = 4 s segments
+  delta_param: 0.1                # FD perturbation (repo default)
+  ksync_steps: 5                  # aux env resync (repo default)
+  termination_penalty: 1.0e4

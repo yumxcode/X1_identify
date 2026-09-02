@@ -91,7 +91,7 @@ def analyze(path, fc=30.0, verbose=True):
 
 if __name__ == "__main__":
     import glob
-    base = os.path.join(REPO, "x1_data") + "/"
+    base = os.path.join(REPO, "data/raw") + "/"
     for p in sorted(glob.glob(base + "*_step_*.csv"))[:4]:
         analyze(p)
         print()

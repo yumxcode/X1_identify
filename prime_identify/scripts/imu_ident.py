@@ -20,6 +20,7 @@ Notes:
     of process noise).
   - a_b = f_b + R^T g_w (w x v term neglected, ~0.25 m/s^2, process noise).
 """
+import os
 import sys
 
 import numpy as np
@@ -31,7 +32,7 @@ from prime.dynamics import X1Dynamics
 from prime.data import load_walk_diag
 
 URDF = "/Users/yumx/code/robot_x/X1/X1_辨识/X1_train/resources/robots/x1/urdf/x1.urdf"
-CSV = "/Users/yumx/code/robot_x/X1/X1_辨识/x1_data/walk_diag_20260824_103222.csv"
+CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "raw", "walk_diag_20260824_103222.csv")
 
 G_W = np.array([0.0, 0.0, -9.81])
 

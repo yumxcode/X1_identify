@@ -4,6 +4,7 @@ Specific force convention: f_b = R^T (a_world - g_world), g_world=[0,0,-9.81]
 => a_local (pinocchio freeflyer tangent) ~= f_b + R^T g_w  (ignoring w x v)
 Sanity: at rest a_local ~ 0; during walking |a| ~ O(1-3) m/s^2.
 """
+import os
 import sys
 
 import numpy as np
@@ -14,7 +15,7 @@ from prime.data import load_walk_diag
 from prime.dynamics import X1Dynamics
 
 URDF = "/Users/yumx/code/robot_x/X1/X1_辨识/X1_train/resources/robots/x1/urdf/x1.urdf"
-CSV = "/Users/yumx/code/robot_x/X1/X1_辨识/x1_data/walk_diag_20260824_103222.csv"
+CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "raw", "walk_diag_20260824_103222.csv")
 
 
 def quat_to_R(quat_xyzw):

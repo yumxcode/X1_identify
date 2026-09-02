@@ -8,6 +8,7 @@ Regressed via Y(q~, v~, a~=dv/dt_L) * dt_L (linear in p). Window averaging
 cuts the effective acceleration noise ~L x vs the instantaneous form, which
 tames the errors-in-variables bias that broke the instantaneous estimator.
 """
+import os
 import sys
 
 import numpy as np
@@ -19,7 +20,7 @@ from imu_ident import null_basis, G_W, quat_to_R
 from prime.dynamics import X1Dynamics
 
 URDF = "/Users/yumx/code/robot_x/X1/X1_辨识/X1_train/resources/robots/x1/urdf/x1.urdf"
-CSV = "/Users/yumx/code/robot_x/X1/X1_辨识/x1_data/walk_diag_20260824_103222.csv"
+CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "raw", "walk_diag_20260824_103222.csv")
 
 
 def gate_key(dyn, k, phi_cache, thresh):

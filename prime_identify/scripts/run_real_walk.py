@@ -23,7 +23,7 @@ from prime.pfie import PFIE, PFIEConfig
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 URDF = os.path.join(REPO, "X1_train", "resources", "robots", "x1", "urdf", "x1.urdf")
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-CSV = os.path.join(REPO, "x1_data", "walk_diag_20260824_103222.csv")
+CSV = os.path.join(REPO, "data/raw", "walk_diag_20260824_103222.csv")
 
 
 def fie_cost(dyn, wd, frames, theta):

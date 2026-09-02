@@ -8,7 +8,7 @@
 
 | 通道 | 数据/环境 | 用途 |
 |---|---|---|
-| A. 真机数据 | `x1_data/walk_diag_20260824_103222.csv`（15 s @ 100 Hz，12 关节 pos/vel/effort + IMU） | 辨识 + 留出集验证 |
+| A. 真机数据 | `data/raw/walk_diag_20260824_103222.csv`（15 s @ 100 Hz，12 关节 pos/vel/effort + IMU） | 辨识 + 留出集验证 |
 | B. Sim GT 自测 | walk_diag 激励 + 已知参数扰动 + 噪声（σ_v=0.004 rad/s）合成 | 估计器正确性门禁 |
 | C. gradmotion 远端 | gm 任务（validate-lite 分支，ubuntu/Isaac 镜像 + conda-forge pinocchio） | 独立复算 + 仿真验证 |
 

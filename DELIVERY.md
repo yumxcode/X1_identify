@@ -72,6 +72,6 @@ main（全量）+ validate-lite（远端验证用孤儿分支）
 │   ├── scripts/                # 自测、诊断、gm_validate（本地/远端同构）、make_gmass_urdf
 │   ├── results/                # x1_gmass_anchored.urdf, gm_validation.json, real_walk_ident.json
 │   └── IDENTIFIABILITY.md      # 不可辨识证据链
-├── x1_data/                    # 真机数据（原样）
+├── data/raw/                   # 真机数据原样（step 阶跃 ×12 + walk_diag）；derived/ 为派生证据
 └── X1_train/ X1_infer/ deploy/ # 原工作区（未改动）
 ```

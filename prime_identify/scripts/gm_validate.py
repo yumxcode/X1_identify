@@ -73,7 +73,7 @@ def main():
 
     # ---------- G4: GRF mass estimate (fixed seed => local==remote) ----------
     dyn = X1Dynamics(urdf_nom)
-    csv_path = os.path.join(REPO, "x1_data/walk_diag_20260824_103222.csv")
+    csv_path = os.path.join(REPO, "data/raw/walk_diag_20260824_103222.csv")
     wd = load_walk_diag(csv_path, dyn)
     rng = np.random.default_rng(0)
     idx = rng.choice(np.arange(100, 1400), 120, replace=False)
