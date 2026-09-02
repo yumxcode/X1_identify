@@ -23,29 +23,76 @@ model:
 
 data:
   sources:                        # datasets -> kp/kd per experiment
-    # 2026-08-24 行走数据（data/raw/，F1 数据观测体系 DATA-01 walk_diag）：
-    #   walk_diag_20260824_103222.csv  15.0 s @100 Hz 行走诊断（cmd 0.25 m/s，
-    #   rl_walk_leg 控制器，增益取自 motion_control rl_x1.yaml，与 08-07 轮一致）
-    #   *_step_*.csv（12 个，1 kHz 单关节阶跃）不入全身回放（无全身状态/无比力），
-    #   其 M1 回归（tau ~ alpha*kp*e + beta*kd*qd + c，见
-    #   data/derived/step_m1_regression_all.json）给出串联关节有效刚度缩放
-    #   alpha=0.34-0.71（knee 0.55），用于锚定 kappa_s（电机小信号增益）。
-    - files:
-        - "data/raw/walk_diag_20260824_103222.csv"
-      kp: {left_hip_pitch_joint: 30, left_hip_roll_joint: 40, left_hip_yaw_joint: 35,
-           left_knee_pitch_joint: 100, left_ankle_pitch_joint: 35, left_ankle_roll_joint: 30,
+  # ---- role: train / cross -----------------------------------------------
+  # role=train  -> 进入辨识与 holdout 划分（随机 val_ratio 抽取，无泄漏风险）
+  # role=cross  -> 只进跨数据集验证 npz（不同策略 checkpoint 的数据；辨识
+  #                参数必须在该组上也优于 nominal —— 完成标准 5
+  #                CROSS-DATASET，比随机 holdout 更严格：物理参数是"机器人
+  #                的"而非"策略特异的"）
+  # 全部数据来自同一台 X1、同一 rl_walk_leg 部署控制器（增益同 rl_x1.yaml）；
+  # 分组按采集时的策略 checkpoint（x1_data 仓库 5999model/7500model/
+  # 7500model_addDR 目录）。
+  #   * train = 7500model(11.7s) + 7500model_addDR(184.8s)，196.5 s ≈ 13x 旧
+  #     单条数据；max_clips 48 随机抽保持单 trial 时间可控（~3.5h/250trials）
+  #   * cross = 5999model(59.4s，工况最富：vy ±1.0 侧移 / wz ±0.6 转向)
+  #     + legacy 20260824(15.0s，R4 基准数据，模型归属未知按保守原则入
+  #     cross 组防止任何训练泄漏)，共 74.4 s
+  #   *_step_*.csv（12 个，1 kHz 单关节阶跃）不入全身回放（无全身状态/无比力），
+  #   其 M1 回归（tau ~ alpha*kp*e + beta*kd*qd + c，见
+  #   data/derived/step_m1_regression_all.json）给出串联关节有效刚度缩放
+  #   alpha=0.34-0.71（knee 0.55），用于锚定 kappa_s（电机小信号增益）。
+  # 增益注：ankle_roll kp 按 rl_x1.yaml 实际值 28（原 30 为笔误；ankle 为并联
+  # 力矩模式，kp 不进回放动力学，无行为差异）。
+  - role: train
+    group: "7500model_addDR"
+    files:
+      - "data/raw/20260902_x1data/7500model_addDR/walk_diag_20260831_141833.csv"
+      - "data/raw/20260902_x1data/7500model_addDR/walk_diag_20260831_142556.csv"
+      - "data/raw/20260902_x1data/7500model_addDR/walk_diag_20260901_155946.csv"
+      - "data/raw/20260902_x1data/7500model_addDR/walk_diag_20260902_093745.csv"
+      - "data/raw/20260902_x1data/7500model_addDR/walk_diag_20260902_094252.csv"
+    kp: &rl_walk_leg_kp {left_hip_pitch_joint: 30, left_hip_roll_joint: 40, left_hip_yaw_joint: 35,
+           left_knee_pitch_joint: 100, left_ankle_pitch_joint: 35, left_ankle_roll_joint: 28,
            right_hip_pitch_joint: 30, right_hip_roll_joint: 40, right_hip_yaw_joint: 35,
-           right_knee_pitch_joint: 100, right_ankle_pitch_joint: 35, right_ankle_roll_joint: 30}
-      kd: {left_hip_pitch_joint: 3, left_hip_roll_joint: 3, left_hip_yaw_joint: 4,
+           right_knee_pitch_joint: 100, right_ankle_pitch_joint: 35, right_ankle_roll_joint: 28}
+    kd: &rl_walk_leg_kd {left_hip_pitch_joint: 3, left_hip_roll_joint: 3, left_hip_yaw_joint: 4,
            left_knee_pitch_joint: 8, left_ankle_pitch_joint: 1.5, left_ankle_roll_joint: 1.5,
            right_hip_pitch_joint: 3, right_hip_roll_joint: 3, right_hip_yaw_joint: 4,
            right_knee_pitch_joint: 8, right_ankle_pitch_joint: 1.5, right_ankle_roll_joint: 1.5}
-      note: "walking diagnostics 2026-08-24, rl_walk_leg gains"
+    note: "2026-08-31..09-02, policy ckpt 7500 trained with DR, 184.8 s"
+  - role: train
+    group: "7500model"
+    files:
+      - "data/raw/20260902_x1data/7500model/walk_diag_20260901_163320.csv"
+    kp: *rl_walk_leg_kp
+    kd: *rl_walk_leg_kd
+    note: "2026-09-01, policy ckpt 7500 no-DR, 11.7 s"
+  - role: cross
+    group: "5999model"
+    files:
+      - "data/raw/20260902_x1data/5999model/walk_diag_20260818_103839.csv"
+      - "data/raw/20260902_x1data/5999model/walk_diag_20260818_144943.csv"
+      - "data/raw/20260902_x1data/5999model/walk_diag_20260820_144337.csv"
+      - "data/raw/20260902_x1data/5999model/walk_diag_20260825_160521.csv"
+    kp: *rl_walk_leg_kp
+    kd: *rl_walk_leg_kd
+    note: "2026-08-18..25, policy ckpt 5999, richest regimes (vy to +-1.0, wz to +-0.6), 59.4 s"
+  - role: cross
+    group: "legacy_20260824"
+    files:
+      - "data/raw/walk_diag_20260824_103222.csv"
+    kp: *rl_walk_leg_kp
+    kd: *rl_walk_leg_kd
+    note: "2026-08-24, 15.0 s, policy ckpt unknown -> conservatively cross (no train leak)"
   clip_h_min_s: 1.0               # H ~ U(H_min, H_max) (paper: avg 1.5 s)
   clip_h_max_s: 2.0
-  max_clips: 60                   # subsample clips for one CMA-ES evaluation
-  val_ratio: 0.3                  # holdout clips for validation（新数据仅 15s/~10 clips，
-                                  # 取 0.3 保证 >=3 个 holdout clip，完成标准更可信）
+  max_clips: 48                   # train-bucket subsample per CMA-ES evaluation
+                                  # (196.5 s data ~130 clips; 48 random keeps a
+                                  #  trial ~4x the legacy cost while covering all
+                                  #  sources via stratified-by-file ordering)
+  cross_max_clips: 80             # cross-bucket cap (validation-only rollouts)
+  val_ratio: 0.3                  # holdout clips for validation（随机划分；跨组
+                                  # 验证由 role=cross 数据独立承担）
   seed: 0
 
 bodies:

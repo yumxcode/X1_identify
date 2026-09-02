@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "sim2real"))
+sys.path.insert(0, str(ROOT / "spi_identify"))
 
 from spi.cost import CostWeights, PredictionCost  # noqa: E402
 from spi.dataset import FULL_JOINT_ORDER, JIDX, LEG_JOINTS, load_clips  # noqa: E402

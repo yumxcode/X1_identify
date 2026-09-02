@@ -55,7 +55,8 @@ python -m unittest discover -s spi_identify/tests -v 2>&1 | tail -8
 # --- stage 1: dataset ------------------------------------------------------
 python spi_identify/scripts/prepare_dataset.py \
   --config spi_identify/configs/x1_spi.yaml \
-  --out data/derived/x1_clips.npz
+  --out data/derived/x1_clips.npz \
+  --out-cross data/derived/x1_cross_clips.npz
 
 if [ "$MODE" != "--validate-only" ]; then
   # --- stage 2: SPI identification ----------------------------------------
@@ -84,6 +85,7 @@ VALIDATE_RC=0
 python spi_identify/scripts/validate_spi.py \
   --config spi_identify/configs/x1_spi.yaml \
   --dataset data/derived/x1_clips.npz \
+  --cross-dataset data/derived/x1_cross_clips.npz \
   --params logs/spi_sysid/gm_play/identified_params.json \
   --out-dir logs/spi_sysid || VALIDATE_RC=$?
 echo "remote_sysid: validation exit code = $VALIDATE_RC"

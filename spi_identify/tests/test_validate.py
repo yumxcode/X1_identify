@@ -204,6 +204,88 @@ class TestAssess(unittest.TestCase):
         self.assertEqual(r["criteria"]["actuator_kappa_s_band"], [0.4, 0.6])
 
 
+class TestCrossDataset(unittest.TestCase):
+    """完成标准 5（CROSS-DATASET）：跨策略数据集泛化门禁。"""
+
+    def _run(self, val_nominal, val_best, cross_nominal, cross_best,
+             n_steps=1000, accel_weight=1.0, params=None):
+        return assess(CFG, params or mk_params(), NOMINAL,
+                      {"nominal": dict(SIG), "best": dict(SIG)},
+                      {"nominal": val_nominal, "best": val_best},
+                      n_steps, accel_weight=accel_weight,
+                      cross_costs={"nominal": cross_nominal, "best": cross_best},
+                      n_cross_steps=n_steps)
+
+    def _good_val(self):
+        vn = dict(SIG, quat=200.0, q=50.0)
+        vb = dict(SIG, quat=40.0, q=10.0,
+                  accel=1.0 * 1000 * 3 * 0.2 ** 2)
+        return vn, vb
+
+    def test_pass_when_cross_generalizes(self):
+        vn, vb = self._good_val()
+        # cross: best 同样明显优于 nominal 且 accel 达标
+        cn = dict(SIG, quat=300.0, q=60.0, accel=1.0 * 1000 * 25.0 ** 2)
+        cb = dict(SIG, quat=50.0, q=12.0, accel=1.0 * 1000 * 12.0 ** 2)
+        r = self._run(vn, vb, cn, cb)
+        self.assertEqual(r["verdict"], "PASS", r)
+        cross = next(c for c in r["checks"] if c["id"] == "CROSS-DATASET")
+        self.assertTrue(cross["ok"])
+        self.assertIsNotNone(r["cross_dataset"])
+        self.assertLessEqual(r["cross_dataset"]["cost_ratio"], 0.70)
+
+    def test_fail_when_cross_cost_ratio_misses(self):
+        # 主 holdout 很好，但跨策略数据上 best 仅略优于 nominal -> FAIL
+        vn, vb = self._good_val()
+        cn = dict(SIG, quat=100.0)
+        cb = dict(SIG, quat=85.0, accel=1.0 * 1000 * 3 * 0.2 ** 2)  # ratio 0.85
+        r = self._run(vn, vb, cn, cb)
+        self.assertEqual(r["verdict"], "FAIL")
+        cross = next(c for c in r["checks"] if c["id"] == "CROSS-DATASET")
+        self.assertFalse(cross["ok"])
+
+    def test_fail_when_cross_accel_bar_misses(self):
+        # cross cost ratio 过，但 cross accel RMS 超出该数据集自己的双侧界
+        vn, vb = self._good_val()
+        cn = dict(SIG, quat=300.0, q=60.0, accel=1.0 * 1000 * 30.0 ** 2)
+        cb = dict(SIG, quat=50.0, q=12.0, accel=1.0 * 1000 * 16.0 ** 2)
+        # bar = min(15, max(13.5, 0.35*30=10.5)) = 13.5; best 16 > 13.5 -> FAIL
+        r = self._run(vn, vb, cn, cb)
+        cross = next(c for c in r["checks"] if c["id"] == "CROSS-DATASET")
+        self.assertFalse(cross["ok"])
+        self.assertGreater(r["cross_dataset"]["accel_rms_best"],
+                           r["cross_dataset"]["accel_bar"])
+
+    def test_cross_bar_uses_cross_nominal_not_holdout(self):
+        # 跨组 bar 必须由 cross 自己的 nominal 计算（而非主 holdout 的）
+        vn, vb = self._good_val()                      # holdout nominal accel 20.23²
+        cn = dict(SIG, quat=300.0, q=60.0, accel=1.0 * 1000 * 20.0 ** 2)
+        cb = dict(SIG, quat=50.0, q=12.0, accel=1.0 * 1000 * 13.9 ** 2)
+        # cross bar = min(15, max(13.5, 0.35*20=7)) = 13.5 -> best 13.9 FAIL
+        r = self._run(vn, vb, cn, cb)
+        cross = next(c for c in r["checks"] if c["id"] == "CROSS-DATASET")
+        self.assertFalse(cross["ok"])
+        self.assertEqual(r["cross_dataset"]["accel_bar"], 13.5)
+
+    def test_no_cross_data_no_gate(self):
+        # 未提供 cross 数据时不产生第 5 项检查（向后兼容）
+        vn, vb = self._good_val()
+        r = assess(CFG, mk_params(), NOMINAL,
+                   {"nominal": dict(SIG), "best": dict(SIG)},
+                   {"nominal": vn, "best": vb}, 1000, accel_weight=1.0)
+        self.assertNotIn("CROSS-DATASET", {c["id"] for c in r["checks"]})
+        self.assertIsNone(r["cross_dataset"])
+
+    def test_cross_accel_disabled_uses_cost_only(self):
+        # accel 权重为 0 时跨组门禁退化为代价比判定
+        vn, vb = self._good_val()
+        cn = dict(SIG, quat=100.0)
+        cb = dict(SIG, quat=60.0)  # ratio 0.6 <= 0.7
+        r = self._run(vn, vb, cn, cb, accel_weight=0.0)
+        cross = next(c for c in r["checks"] if c["id"] == "CROSS-DATASET")
+        self.assertTrue(cross["ok"])
+
+
 class TestCredibility(unittest.TestCase):
     def test_grades(self):
         g = credibility_grade(NOMINAL, NOMINAL, CFG["bodies"],

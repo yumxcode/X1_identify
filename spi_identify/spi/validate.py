@@ -19,7 +19,12 @@ Completion criteria (see also configs/x1_spi.yaml -> validation):
                     缩放 alpha，独立于行走数据的交叉校验；防 kappa_s 吸收
                     基座/接触等未建模误差）。带由 validation.actuator_kappa_s_band
                     配置，缺省 [0.34, 0.71]。
-  5. BOUNDARY(WARN) 无参数贴搜索盒边界（提示参数吸收模型误差而非真实物理量）。
+  5. CROSS-DATASET  （可选，提供跨策略数据集时生效且必须通过）辨识参数在
+                    *不同策略 checkpoint* 采集的独立数据集上同样满足：
+                    代价比 <= effective_ratio 且比力 RMS 落在与标准 3 相同的
+                    双侧界内（bar 由该数据集的 nominal 残差计算）。物理参数
+                    属于机器人而非策略——过拟合策略特异动力学的参数在此暴露。
+  6. BOUNDARY(WARN) 无参数贴搜索盒边界（提示参数吸收模型误差而非真实物理量）。
 
 Credibility grades (informational, 高/中/低 by deviation from nominal):
   mass |d|/nominal <20% 高 <40% 中;  com max|d| <30mm 高 <60mm 中;
@@ -118,10 +123,14 @@ def boundary_warnings(params: Dict, cfg: Dict) -> List[str]:
 
 def assess(cfg: Dict, params: Dict, nominal: Dict,
            train_costs: Dict[str, Dict[str, float]], val_costs: Dict[str, Dict[str, float]],
-           n_val_steps: int, accel_weight: float = 1.0) -> Dict:
+           n_val_steps: int, accel_weight: float = 1.0,
+           cross_costs: Optional[Dict[str, Dict[str, float]]] = None,
+           n_cross_steps: int = 0) -> Dict:
     """Evaluate the completion criteria.
 
     train_costs/val_costs: {"nominal": per_signal_cost dict, "best": per_signal_cost dict}
+    cross_costs: optional, same structure evaluated on the disjoint cross-policy
+    dataset (criterion 5). When provided and non-empty it gates the verdict.
     Returns the full report; exit_code 0 = PASS, 1 = FAIL (WARN does not block).
     """
     body_cfg = cfg["bodies"]
@@ -161,6 +170,8 @@ def assess(cfg: Dict, params: Dict, nominal: Dict,
     #      floor (measured cross-dataset, v12 12.55 / v13 12.92), further
     #      relative improvement is not physically attainable — the absolute
     #      bound accel_rms_max keeps the criterion strict regardless.
+    improve_ratio = float(vcfg.get("accel_improve_ratio", ACCEL_IMPROVE_RATIO))
+    rms_floor = float(vcfg.get("accel_rms_floor", ACCEL_RMS_FLOOR))
     rms_best = accel_rms(val_costs["best"], accel_weight, n_val_steps)
     rms_nom = accel_rms(val_costs["nominal"], accel_weight, n_val_steps)
     if accel_weight <= 0 or rms_best is None:
@@ -198,6 +209,39 @@ def assess(cfg: Dict, params: Dict, nominal: Dict,
                    f"[{ks_lo}, {ks_hi}] (serial alpha: knee .55 / hip .34-.71)"),
     })
 
+    # 5. cross-policy-dataset generalization (gating when cross data provided)
+    report_cross = None
+    if cross_costs:
+        cn = sum(cross_costs["nominal"].values())
+        cb = sum(cross_costs["best"].values())
+        ratio_c = (cb / cn) if cn > 0 else float("inf")
+        ok5a = cn > 0 and ratio_c <= eff_ratio
+        rms_cb = accel_rms(cross_costs["best"], accel_weight, n_cross_steps)
+        rms_cn = accel_rms(cross_costs["nominal"], accel_weight, n_cross_steps)
+        ok5b = True
+        bar_c = None
+        if accel_weight > 0 and rms_cb is not None:
+            if rms_cn is None or rms_cn < 0.01:
+                bar_c = accel_max
+            else:
+                bar_c = min(accel_max, max(rms_floor, improve_ratio * rms_cn))
+            ok5b = bool(rms_cb <= bar_c)
+        checks.append({
+            "id": "CROSS-DATASET",
+            "ok": bool(ok5a and ok5b),
+            "detail": (f"cross-policy dataset cost ratio best/nominal="
+                       f"{ratio_c:.3f} (<= {eff_ratio})"
+                       + (f"; accel RMS best={rms_cb:.3f} nominal={rms_cn:.3f} "
+                          f"m/s^2 (bar={bar_c:.3f})" if rms_cb is not None else "")),
+        })
+        report_cross = {
+            "cost_ratio": round(ratio_c, 4),
+            "accel_rms_best": (None if rms_cb is None else round(rms_cb, 3)),
+            "accel_rms_nominal": (None if rms_cn is None else round(rms_cn, 3)),
+            "accel_bar": (None if bar_c is None else round(bar_c, 3)),
+            "n_steps": int(n_cross_steps),
+        }
+
     for c in checks:
         if not c["ok"]:
             verdict = "FAIL"
@@ -220,6 +264,7 @@ def assess(cfg: Dict, params: Dict, nominal: Dict,
                     for k, v in val_costs.items()},
         },
         "accel_rms_val": (None if rms_best is None else round(rms_best, 3)),
+        "cross_dataset": report_cross,
         "criteria": {
             "effective_ratio": eff_ratio,
             "accel_rms_max": accel_max,

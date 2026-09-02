@@ -12,6 +12,7 @@ Usage:
   python spi_identify/scripts/validate_spi.py \
       --config spi_identify/configs/x1_spi.yaml \
       --dataset data/derived/x1_clips.npz \
+      [--cross-dataset data/derived/x1_cross_clips.npz] \
       --params logs/spi_sysid/gm_play/identified_params.json \
       --out-dir logs/spi_sysid
 """
@@ -27,7 +28,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "sim2real"))
+sys.path.insert(0, str(ROOT / "spi_identify"))
 
 from spi.cost import CostWeights, PredictionCost, per_signal_cost  # noqa: E402
 from spi.dataset import FULL_JOINT_ORDER, JIDX, LEG_JOINTS, load_clips  # noqa: E402
@@ -87,6 +88,8 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
     ap.add_argument("--dataset", required=True)
+    ap.add_argument("--cross-dataset", default=None,
+                    help="disjoint cross-policy clips npz (criterion 5)")
     ap.add_argument("--params", required=True)
     ap.add_argument("--out-dir", default="logs/spi_sysid")
     ap.add_argument("--val-ratio", type=float, default=None)
@@ -130,9 +133,20 @@ def main() -> None:
     val_costs = {"nominal": rollout_costs(val_clips, nominal),
                  "best": rollout_costs(val_clips, params)}
 
+    cross_costs = None
+    n_cross_steps = 0
+    if args.cross_dataset:
+        cross_clips, cross_meta = load_clips(args.cross_dataset)
+        print(f"[validate] cross-dataset: {len(cross_clips)} clips "
+              f"(meta groups: {[g['group'] for g in cross_meta.get('groups', []) if g.get('role')=='cross']})")
+        cross_costs = {"nominal": rollout_costs(cross_clips, nominal),
+                       "best": rollout_costs(cross_clips, params)}
+        n_cross_steps = sum(c["n"] for c in cross_clips)
+
     n_val_steps = sum(c["n"] for c in val_clips)
     report = assess(cfg, params, nominal, train_costs, val_costs,
-                    n_val_steps, accel_weight=weights.base_accel)
+                    n_val_steps, accel_weight=weights.base_accel,
+                    cross_costs=cross_costs, n_cross_steps=n_cross_steps)
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

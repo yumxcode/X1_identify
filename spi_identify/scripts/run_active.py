@@ -28,7 +28,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "sim2real"))
+sys.path.insert(0, str(ROOT / "spi_identify"))
 
 from active.bezier import bezier_matrix, denormalize  # noqa: E402
 from active.command_opt import optimize_commands  # noqa: E402
