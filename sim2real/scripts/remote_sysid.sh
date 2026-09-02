@@ -19,6 +19,7 @@ cd "$REPO"
 # validation + apply; skips the ~15 min CMA-ES identification, reuses
 # committed params from sim2real/results/)
 MODE="${1:-full}"
+shift || true
 if [ "$MODE" = "--validate-only" ]; then
   echo "remote_sysid: VALIDATE-ONLY mode (skip identification)"
 fi
@@ -48,10 +49,11 @@ python sim2real/scripts/prepare_dataset.py \
 
 if [ "$MODE" != "--validate-only" ]; then
   # --- stage 2: SPI identification ----------------------------------------
+  # remaining args pass through to run_spi.py (e.g. --seed N --n-trials N)
   python sim2real/scripts/run_spi.py \
     --config sim2real/configs/x1_spi.yaml \
     --dataset data/derived/x1_clips.npz \
-    --out-dir logs/spi_sysid
+    --out-dir logs/spi_sysid "$@"
 else
   echo "remote_sysid: [validate-only] params must come from a previous run"
   # fresh container has no logs/ — fall back to the repo-committed params file

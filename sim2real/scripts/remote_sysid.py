@@ -7,6 +7,7 @@ This wrapper simply re-execs ``remote_sysid.sh`` under bash; the script
 self-locates via ``$(dirname $0)`` so the cwd does not matter.
 
 startScript form:  gm-run X1_identify/sim2real/scripts/remote_sysid.py [--validate-only]
+Extra args pass through to run_spi.py in full mode (e.g. --seed 1 --n-trials 250).
 """
 import subprocess
 import sys

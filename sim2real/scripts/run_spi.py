@@ -44,6 +44,8 @@ def main() -> None:
     ap.add_argument("--out-dir", default="logs/spi_sysid")
     ap.add_argument("--n-trials", type=int, default=None)
     ap.add_argument("--max-clips", type=int, default=None)
+    ap.add_argument("--seed", type=int, default=None,
+                    help="override optimizer CMA-ES seed (default: config optimizer.seed)")
     args = ap.parse_args()
 
     import yaml
@@ -90,9 +92,10 @@ def main() -> None:
     print(f"[spi] nominal-params prediction cost: {cost0:.4f}")
 
     n_trials = args.n_trials or cfg["optimizer"]["n_trials"]
+    opt_seed = args.seed if args.seed is not None else cfg["optimizer"].get("seed", 0)
     out_dir = Path(args.out_dir)
     result = run_spi(train_clips, cfg, evaluate, n_trials=n_trials,
-                     seed=cfg["optimizer"].get("seed", 0),
+                     seed=opt_seed,
                      study_path=out_dir / "study.json",
                      reg_scale=weights.reg_scale)
 
