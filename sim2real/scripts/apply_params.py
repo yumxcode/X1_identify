@@ -143,7 +143,8 @@ def main() -> None:
     ap.add_argument("--params", required=True, help="identified_params.json")
     ap.add_argument("--urdf", default=str(ROOT / "sim2real/resources/x1_nominal.urdf"))
     ap.add_argument("--mjcf", default=str(
-        ROOT / "X1_infer/module/sim_module/model/mjcf/robot/xyber_x1/xyber_x1_serial.xml"))
+        ROOT / "sim2real/resources/mjcf/robot/xyber_x1/xyber_x1_serial.xml"),
+        help="MJCF robot include to patch (default: vendored 2.3.6-compatible copy)")
     ap.add_argument("--urdf-body", default="base_link")
     ap.add_argument("--mjcf-body", default="x1-body")
     ap.add_argument("--out-dir", default=str(ROOT / "sim2real/export"))

@@ -1,0 +1,146 @@
+[SDK][INFO] 2026-09-02 08:58:12 Start scanning directory: /workspaceremote_sysid: VALIDATE-ONLY mode (skip identification)
+[SDK][INFO] 2026-09-02 08:58:12 Obtained python dependency environment for training project[SDK][INFO] 2026-09-02 08:58:12 Task(TASK_20260902_010) status updated to: Running , ret:TrueWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+deps OK: mujoco 2.3.6 | optuna 4.5.0 | cmaes 0.12.0
+[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/tests/__pycache__/test_active.cpython-38.pyc[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/active/__pycache__/__init__.cpython-38.pyc.139716327023408[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/active/__pycache__/bezier.cpython-38.pyc.139716327023536[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/active/__pycache__/fim.cpython-38.pyc.139716273966128[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/active/__pycache__/command_opt.cpython-38.pyc.139716273662384[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/tests/__pycache__/test_cost.cpython-38.pyc.139716273662384[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/spi/__pycache__/__init__.cpython-38.pyc.139716273660976[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/spi/__pycache__/param_space.cpython-38.pyc.139716273250480[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/spi/__pycache__/dataset.cpython-38.pyc.139716273252912[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/spi/__pycache__/cost.cpython-38.pyc.139716273439408[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/spi/__pycache__/optimizer.cpython-38.pyc.139716273440176[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/tests/__pycache__/test_dataset.cpython-38.pyc.139716273441072[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/tests/__pycache__/test_mjcf_compat.cpython-38.pyc.139716273468736[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/tests/__pycache__/test_param_space.cpython-38.pyc.139716273469600[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/tests/__pycache__/test_validate.cpython-38.pyc.139716272246960[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/spi/__pycache__/validate.cpython-38.pyc.139716272247088[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/tests/_synth.csv[SDK][INFO] 2026-09-02 08:59:16 New file detected globally: /workspace/X1_identify/sim2real/tests/_synth_clips.npztest_pass_for_good_identification (test_validate.TestAssess) ... ok
+test_grades (test_validate.TestCredibility) ... ok
+test_deterministic_and_exhaustive (test_validate.TestSplitClips) ... ok
+
+----------------------------------------------------------------------
+Ran 57 tests in 0.288s
+
+OK
+[SDK][INFO] 2026-09-02 08:59:17 New file detected globally: /workspace/X1_identify/data/derived/x1_clips.npz[prepare] parsing /workspace/X1_identify/data/raw/walk_diag_20260824_103222.csv
+[prepare]   10 clips (dt=10.00 ms)
+[prepare] saved 10 clips -> data/derived/x1_clips.npz
+remote_sysid: [validate-only] params must come from a previous run
+[SDK][INFO] 2026-09-02 08:59:17 New file detected globally: /workspace/X1_identify/logs/spi_sysid/gm_play/identified_params.jsonremote_sysid: [validate-only] restored params from sim2real/results/
+-rw-rw-rw- 1 root root 3310 Sep  2 08:59 logs/spi_sysid/gm_play/identified_params.json
+[SDK][INFO] 2026-09-02 08:59:17 New file detected globally: /workspace/X1_identify/sim2real/spi/__pycache__/rollout.cpython-38.pyc.140269513260720[SDK][INFO] 2026-09-02 08:59:22 New file detected globally: /workspace/X1_identify/logs/spi_sysid/validation.json[validate] 10 clips -> train 7 / val 3
+{
+  "verdict": "PASS",
+  "exit_code": 0,
+  "checks": [
+    {
+      "id": "EFFECTIVENESS",
+      "ok": true,
+      "detail": "val cost best=85029.4 vs nominal=289895.6 (ratio 0.293 <= 0.7)"
+    },
+    {
+      "id": "PHYSICAL",
+      "ok": true,
+      "detail": "all body params inside configured ranges"
+    },
+    {
+      "id": "ACCEL",
+      "ok": true,
+      "detail": "val accel RMS: best=13.007 nominal=20.229 m/s^2 (bar=min(15.0, max(13.5, 7.08))=13.5; floor branch=yes)"
+    },
+    {
+      "id": "ACTUATOR",
+      "ok": true,
+      "detail": "kappa_s=0.434 vs step-regression band [0.34, 0.71] (serial alpha: knee .55 / hip .34-.71)"
+    }
+  ],
+  "warnings": [],
+  "credibility": {
+    "base.mass": "高",
+    "base.com": "中",
+    "base.inertia": "低",
+    "kappa.hip_pitch": "中",
+    "kappa.hip_rolleyaw": "中",
+    "kappa.knee": "高",
+    "kappa.ankle": "高",
+    "kappa_s": "高"
+  },
+  "costs": {
+    "train": {
+      "nominal": {
+        "quat": 567.07,
+        "angvel": 10396.08,
+        "accel": 458245.31,
+        "q": 12421.7,
+        "qd": 229518.1,
+        "tau": 13678.36
+      },
+      "best": {
+        "quat": 569.87,
+        "angvel": 1270.65,
+        "accel": 141980.72,
+        "q": 10193.03,
+        "qd": 10560.37,
+        "tau": 3380.49
+      }
+    },
+    "val": {
+      "nominal": {
+        "quat": 250.01,
+        "angvel": 4684.01,
+        "accel": 182500.45,
+        "q": 4321.41,
+        "qd": 92108.21,
+        "tau": 6031.49
+      },
+      "best": {
+        "quat": 265.88,
+        "angvel": 578.1,
+        "accel": 75456.76,
+        "q": 3530.55,
+        "qd": 3747.02,
+        "tau": 1451.15
+      }
+    }
+  },
+  "accel_rms_val": 13.007,
+  "criteria": {
+    "effective_ratio": 0.7,
+    "accel_rms_max": 15.0,
+    "accel_improve_ratio": 0.35,
+    "accel_rms_floor": 13.5,
+    "actuator_kappa_s_band": [
+      0.34,
+      0.71
+    ]
+  }
+}
+[validate] verdict: PASS (exit 0)
+[validate] report -> logs/spi_sysid/validation.json
+remote_sysid: validation exit code = 0
+[SDK][INFO] 2026-09-02 08:59:49 New file detected globally: /workspace/X1_identify/logs/mass_landscape/landscape.json[SDK][INFO] 2026-09-02 08:59:50 New file detected globally: /workspace/X1_identify/logs/mass_landscape/landscape.png[landscape] mass=3.0000 -> cost 380430.3283
+[landscape] mass=3.1786 -> cost 372934.6539
+[landscape] mass=3.3571 -> cost 383233.7292
+[landscape] mass=3.5357 -> cost 374700.6445
+[landscape] mass=3.7143 -> cost 370987.5553
+[landscape] mass=3.8929 -> cost 368631.2702
+[landscape] mass=4.0714 -> cost 369912.8719
+[landscape] mass=4.2500 -> cost 376496.3914
+[landscape] mass=4.4286 -> cost 375521.7564
+[landscape] mass=4.6071 -> cost 372866.2931
+[landscape] mass=4.7857 -> cost 363103.8463
+[landscape] mass=4.9643 -> cost 371387.6347
+[landscape] mass=5.1429 -> cost 369308.8116
+[landscape] mass=5.3214 -> cost 363694.6833
+[landscape] mass=5.5000 -> cost 359150.9428
+[landscape] plot -> logs/mass_landscape/landscape.png
+[landscape] best mass = 5.5000 (cost 359150.9428)
+[apply] identified pelvis (raw): m=3.7831 com=[ 0.00121 -0.0082  -0.01618] I_diag=[0.0415  0.13362 0.112  ]
+[apply] exported pelvis      : m=3.7831 com=[ 0.00121 -0.0082  -0.01618] I_diag=[0.0415  0.13362 0.112  ]
+[apply] URDF -> sim2real/export/x1_identified.urdf
+[apply] MJCF -> sim2real/export/xyber_x1_identified.xml
+[apply] DR  -> sim2real/export/dr_x1_spi.json
+[apply] report -> sim2real/export/report.md
+remote_sysid: ALL DONE (validation rc=0)
+logs/:
+mass_landscape
+spi_sysid
+
+logs/mass_landscape:
+landscape.json
+landscape.png
+
+logs/spi_sysid:
+gm_play
+validation.json
+
+logs/spi_sysid/gm_play:
+identified_params.json
+[SDK][INFO] 2026-09-02 08:59:50 Task(TASK_20260902_010) status updated to: Completed , ret:True
