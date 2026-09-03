@@ -34,7 +34,8 @@ sys.path.insert(0, str(ROOT))
 from joint_identify.gravity_torque import (build_gravity_lut, gravity_lookup,  # noqa: E402
                                             mujoco_available, zero_lut)
 from joint_identify.regress import (detect_feedback_semantics, fit_dynamics,  # noqa: E402
-                                    fit_kt, fit_m1, savgol_ddq, xcorr_delay)
+                                    fit_kt, fit_m1, is_serial, savgol_ddq,
+                                    xcorr_delay)
 
 RAW_DIR = ROOT / "data" / "raw"
 OUT_DIR = Path("logs/joint_identify")
@@ -111,8 +112,10 @@ def identify_one(path, use_mujoco):
         lut = (build_gravity_lut(joint) if use_mujoco else zero_lut(joint))
         g = gravity_lookup(d["q"][seg_dyn], lut)
         qdd = savgol_ddq(d["q"], d["dt"], window=SG_WIN)[seg_dyn]
-        gyro = (d["gyro"][seg_dyn]
-                if d["gyro"] is not None and "hip" in joint else None)
+        # gyro coupling for ALL serial joints: knee steps excite the largest
+        # base motion (gyro_rms 0.29 rad/s, highest serial — M1 evidence);
+        # T9 knee R2 0.50-0.53 without coupling traced to exactly this.
+        gyro = d["gyro"][seg_dyn] if (d["gyro"] is not None and is_serial(joint)) else None
         entry["dynamics"] = fit_dynamics(tau[seg_dyn] - g, qdd, qd[seg_dyn],
                                          gyro=gyro, eps=EPS_V)
         entry["dynamics"]["gravity_source"] = lut["source"]

@@ -70,6 +70,43 @@ class TestFitDynamics(unittest.TestCase):
         self.assertGreater(fit_yes["R2"], fit_no["R2"])
         self.assertLess(abs(fit_yes["J_eff"] - 0.35) / 0.35, 0.08)
 
+    def test_se_returns_and_scales_with_noise(self):
+        # SE 存在、为正，且噪声越大 SE 越大（协方差传播正确性）
+        tau_lo, qdd, qd, _ = _synth_dynamics(noise=0.02)
+        tau_hi, _, _, _ = _synth_dynamics(noise=0.30)
+        f_lo = fit_dynamics(tau_lo, qdd, qd)
+        f_hi = fit_dynamics(tau_hi, qdd, qd)
+        for k in ("se_J_eff", "se_tau_c", "se_tau_v", "se_c0"):
+            self.assertIn(k, f_lo)
+            self.assertGreater(f_lo[k], 0.0)
+        self.assertGreater(f_hi["se_J_eff"], f_lo["se_J_eff"])
+        self.assertGreater(f_hi["se_tau_c"], f_lo["se_tau_c"])
+
+    def test_se_brackets_true_param(self):
+        # 噪声已知时，|beta - true| 应在数倍 SE 内（95% 内 ~2SE）
+        tau, qdd, qd, _ = _synth_dynamics(noise=0.05)
+        f = fit_dynamics(tau, qdd, qd)
+        self.assertLess(abs(f["J_eff"] - 0.35), 4 * f["se_J_eff"])
+        self.assertLess(abs(f["tau_c"] - 1.2), 4 * f["se_tau_c"])
+
+    def test_knee_like_signal_gyro_helps(self):
+        # knee 场景：显著基座运动（gyro 幅值与主动力学同量级，对应真实数据
+        # gyro_rms 0.29 rad/s 的量级占比）—— gyro 耦合应明显提升 R²
+        n, dt = 6000, 1e-3
+        t = np.arange(n) * dt
+        qd = 0.9 * np.sin(2 * np.pi * 1.2 * t)
+        qdd = np.gradient(qd, dt)
+        gyro = np.stack([0.8 * np.sin(2 * np.pi * 1.8 * t + k) for k in range(3)], axis=1)
+        coef = np.array([2.0, -1.5, 1.2])
+        tau = (0.25 * qdd + 1.5 * np.tanh(qd / 0.05) + 0.3 * qd - 0.1
+               + gyro @ coef + RNG.normal(0, 0.05, n))
+        f_no = fit_dynamics(tau, qdd, qd, gyro=None)
+        f_yes = fit_dynamics(tau, qdd, qd, gyro=gyro)
+        self.assertGreater(f_yes["R2"], f_no["R2"] + 0.02)
+        # 耦合后物理参数正确恢复（真值 J_eff 0.25 / tau_c 1.5）
+        self.assertLess(abs(f_yes["J_eff"] - 0.25), 0.01)
+        self.assertLess(abs(f_yes["tau_c"] - 1.5), 0.05)
+
 
 class TestDelay(unittest.TestCase):
     def test_recovers_known_lag(self):
@@ -200,6 +237,62 @@ class TestGates(unittest.TestCase):
     def test_fail_on_asymmetry(self):
         r = evaluate(_mk_params(lr_factor=1.6), m1_alphas=self.M1)
         self.assertFalse(next(c for c in r["checks"] if c["id"] == "J2_LR_SYMMETRY")["ok"])
+
+    def test_j2_significance_screen_suppresses_noise_dominated(self):
+        # rel_diff > tol 但差值在 2-sigma 估计不确定度内 -> 非违例（噪声主导，
+        # 相对度量对近零参数无意义）。通过 se_*（来自 fit_dynamics）实现。
+        from joint_identify.scripts.validate_joint import _pairwise_symmetry
+        params = {}
+        for side in ("left_", "right_"):
+            for jn in ("hip_pitch_joint", "knee_pitch_joint", "ankle_pitch_joint"):
+                serial = "ankle" not in jn
+                params[side + jn] = {
+                    "m1": {"alpha": 0.55, "R2": 0.9, "n": 1000},
+                    "kt": {"kt": 190.0, "c0": 0.1, "R2": 0.99, "n": 1000},
+                    "dynamics": ({"J_eff": 0.35 if side == "left_" else 0.36,
+                                  "se_J_eff": 0.02,
+                                  "tau_c": 1.20 if side == "left_" else 1.24,
+                                  "se_tau_c": 0.05,
+                                  "tau_v": 0.004 if side == "left_" else -0.340,
+                                  "se_tau_v": 0.30,
+                                  "c0": -0.1, "R2": 0.8, "n": 1000}
+                                 if serial else None),
+                    "delay_ms": 9.0 if serial else None,
+                }
+        sym = _pairwise_symmetry(params)
+        tau_v_pairs = [e for e in sym if e["param"] == "tau_v"]
+        self.assertEqual(len(tau_v_pairs), 2)
+        knee_tv = next(e for e in tau_v_pairs if "knee" in e["joint_pair"])
+        # |0.004 - (-0.34)| = 0.344, rel_diff 巨大；2*sqrt(0.3²+0.3²)=0.85 > 0.344
+        # -> sig_margin = 0.344/0.85 < 1 -> 噪声主导，不应算违例
+        self.assertGreater(knee_tv["rel_diff"], 0.35)
+        self.assertIsNotNone(knee_tv["sig_margin"])
+        self.assertLess(knee_tv["sig_margin"], 1.0)
+        r = evaluate(params, m1_alphas=self.M1)
+        j2 = next(c for c in r["checks"] if c["id"] == "J2_LR_SYMMETRY")
+        self.assertTrue(j2["ok"], msg=str(j2))
+        self.assertIn("noise-dominated", j2["detail"])
+
+    def test_j2_significant_asymmetry_still_fails(self):
+        # rel_diff > tol 且差值远超 2-sigma -> 仍判违例（筛查不放松真实不对称）
+        params = {}
+        for side, tv in (("left_", 0.63), ("right_", 1.14)):
+            for jn in ("hip_pitch_joint", "knee_pitch_joint", "ankle_pitch_joint"):
+                serial = "ankle" not in jn
+                params[side + jn] = {
+                    "m1": {"alpha": 0.55, "R2": 0.9, "n": 1000},
+                    "kt": {"kt": 190.0, "c0": 0.1, "R2": 0.99, "n": 1000},
+                    "dynamics": ({"J_eff": 0.35, "se_J_eff": 0.02,
+                                  "tau_c": 1.20, "se_tau_c": 0.05,
+                                  "tau_v": tv, "se_tau_v": 0.02,
+                                  "c0": -0.1, "R2": 0.8, "n": 1000}
+                                 if serial else None),
+                    "delay_ms": 9.0 if serial else None,
+                }
+        r = evaluate(params, m1_alphas=self.M1)
+        j2 = next(c for c in r["checks"] if c["id"] == "J2_LR_SYMMETRY")
+        # hip_pitch tau_v: |0.63-1.14|=0.51 >> 2*sqrt(2)*0.02 -> 显著 -> FAIL
+        self.assertFalse(j2["ok"], msg=str(j2))
 
     def test_knee_below_target_is_warn_not_fail(self):
         r = evaluate(_mk_params(r2=0.62), m1_alphas=self.M1)

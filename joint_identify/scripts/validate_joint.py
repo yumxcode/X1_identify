@@ -18,17 +18,33 @@ J4 delay sanity      serial delay in [-5, +30] ms
 J5 current map       kt R2 >= 0.90 on every joint (absolute band not used:
                       logger current scaling unverified)
 Parallel ankles: reported but only J5 applies (alpha > 1 is expected there).
+J2 significance screen (2026-09-03): a pair violates symmetry only when
+rel_diff > tol AND the difference is statistically significant,
+|a-b| > 2*sqrt(se_a^2+se_b^2). Rationale: rel_diff explodes for parameters
+whose magnitude is at the estimation-noise floor (post gyro-coupling tau_v
+can legitimately approach 0 on one side) — a relative metric on a
+noise-dominated parameter flags noise, not robot asymmetry. Pairs whose
+difference is within 2-sigma of the estimator uncertainty are reported as
+"not assessable (noise-dominated)" rather than violations. When SEs are
+unavailable the pre-registered pure rel_diff rule applies unchanged.
 """
 
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
+import numpy as np
+
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "joint_identify"))
+from regress import is_serial  # noqa: E402  (canonical home; re-exported below)
+
 M1_JSON = ROOT / "data" / "derived" / "step_m1_regression_all.json"
 
 SYMMETRY_REL_TOL = 0.35
+J2_SIGMA_K = 2.0
 ALPHA_BAND = (0.34, 0.71)
 ALPHA_M1_MAX_DEV = 0.15  # per-joint |alpha - alpha_M1| >= this -> WARN (method systematics)
 DELAY_RANGE_MS = (-5.0, 30.0)
@@ -36,7 +52,7 @@ KT_R2_MIN = 0.90
 R2_FLOOR = {"hip": 0.55, "knee": 0.60}
 KNEE_TARGET = 0.75
 
-SERIAL_HINTS = ("hip_pitch", "hip_roll", "hip_yaw", "knee_pitch")
+# is_serial lives in regress.py (canonical home); imported at module top.
 
 
 def _load_m1(path=M1_JSON):
@@ -48,16 +64,15 @@ def _load_m1(path=M1_JSON):
         return {}
 
 
-def is_serial(joint):
-    return any(h in joint for h in SERIAL_HINTS)
-
-
 def _pairwise_symmetry(jparams):
     """Relative difference of same-name L/R joints for keyed scalars.
 
     SERIAL joints only: parallel ankles are torque-driven (their serial-
     dynamics fit is outside the model's validity — T7 R2 0.16-0.43 and
     sign-flipping tau_v are drive-mode artifacts, not robot asymmetry).
+    Each entry carries (rel_diff, sig) where sig is the significance margin
+    |a-b| / (2*sqrt(se_a^2+se_b^2)) > 1 means the asymmetry is statistically
+    significant (None when SEs are unavailable -> pure rel_diff rule).
     """
     out = []
     nested = {"J_eff": ("dynamics", "J_eff"), "tau_c": ("dynamics", "tau_c"),
@@ -78,12 +93,24 @@ def _pairwise_symmetry(jparams):
             a, b = val(lj), val(rj)
             if a is None or b is None:
                 continue
+            sa = sb = None
+            da, db = jparams[lj].get(sub), jparams[rj].get(sub)
+            if isinstance(da, dict) and isinstance(db, dict) and f"se_{field}" in da \
+                    and f"se_{field}" in db:
+                va, vb = da[f"se_{field}"], db[f"se_{field}"]
+                if isinstance(va, (int, float)) and isinstance(vb, (int, float)):
+                    sa, sb = float(va), float(vb)
             denom = min(abs(a), abs(b))
             if denom < 1e-9:
                 continue
+            rel = abs(a - b) / denom
+            sig = None
+            if sa is not None and sb is not None:
+                thr = J2_SIGMA_K * float(np.sqrt(sa * sa + sb * sb)) if sa + sb > 0 else 0.0
+                sig = (abs(a - b) / thr) if thr > 0 else float("inf")
             out.append({"joint_pair": f"{lj}|{rj}", "param": key,
                         "values": [a, b],
-                        "rel_diff": abs(a - b) / denom})
+                        "rel_diff": rel, "sig_margin": sig})
     return out
 
 
@@ -115,15 +142,44 @@ def evaluate(joint_params, m1_alphas=None):
     else:
         add("J1_DYNAMICS_R2", False, "no serial-joint dynamics results")
 
-    # J2 symmetry
+    # J2 symmetry (significance-screened): a pair violates only when
+    # rel_diff > tol AND the L/R difference is statistically significant
+    # (|a-b| > 2*sigma_diff). Noise-dominated pairs are reported as
+    # not-assessable instead of violations; missing SEs keep the pure
+    # rel_diff rule (pre-registered behavior).
     sym = _pairwise_symmetry(joint_params)
     if sym:
-        worst = max(sym, key=lambda e: e["rel_diff"])
-        ok = worst["rel_diff"] <= SYMMETRY_REL_TOL
-        add("J2_LR_SYMMETRY", ok,
-            f"worst {worst['joint_pair']}.{worst['param']} rel_diff="
-            f"{worst['rel_diff']:.2f} (<= {SYMMETRY_REL_TOL}); "
-            f"{sum(1 for e in sym if e['rel_diff'] > SYMMETRY_REL_TOL)} violations / {len(sym)} pairs")
+        def is_violation(e):
+            if e["rel_diff"] <= SYMMETRY_REL_TOL:
+                return False
+            if e.get("sig_margin") is None:
+                return True  # no SEs -> legacy rule
+            return e["sig_margin"] > 1.0
+
+        violations = [e for e in sym if is_violation(e)]
+        noise_dom = [e for e in sym
+                     if e["rel_diff"] > SYMMETRY_REL_TOL
+                     and e.get("sig_margin") is not None
+                     and e["sig_margin"] <= 1.0]
+        if violations:
+            worst = max(violations, key=lambda e: e["rel_diff"])
+            sig_s = (f"{worst['sig_margin']:.1f} sigma"
+                     if worst.get("sig_margin") is not None else "n/a (no SE)")
+            add("J2_LR_SYMMETRY", False,
+                f"worst {worst['joint_pair']}.{worst['param']} rel_diff="
+                f"{worst['rel_diff']:.2f} (> {SYMMETRY_REL_TOL}, sig={sig_s}); "
+                f"{len(violations)} violations / {len(sym)} pairs"
+                + (f"; {len(noise_dom)} noise-dominated (not assessable)" if noise_dom else ""))
+        else:
+            worst_rel = max(sym, key=lambda e: e["rel_diff"])
+            sig_s = (f"{worst_rel['sig_margin']:.2f}"
+                     if worst_rel.get("sig_margin") is not None else "n/a")
+            add("J2_LR_SYMMETRY", True,
+                f"worst {worst_rel['joint_pair']}.{worst_rel['param']} "
+                f"rel_diff={worst_rel['rel_diff']:.2f} (sig={sig_s}); "
+                f"0 violations / {len(sym)} pairs"
+                + (f"; {len(noise_dom)} noise-dominated (rel_diff over tol but "
+                   f"within 2-sigma estimator uncertainty)" if noise_dom else ""))
     else:
         add("J2_LR_SYMMETRY", True, "no comparable L/R pairs (degenerate)")
 

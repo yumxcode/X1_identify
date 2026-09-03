@@ -29,8 +29,15 @@ __all__ = [
     "savgol_coeffs", "savgol_deriv", "savgol_ddq",
     "irls_huber_fit", "r_squared",
     "fit_dynamics", "xcorr_delay", "fit_m1", "fit_kt",
-    "detect_feedback_semantics",
+    "detect_feedback_semantics", "is_serial",
 ]
+
+SERIAL_JOINT_HINTS = ("hip_pitch", "hip_roll", "hip_yaw", "knee_pitch")
+
+
+def is_serial(joint):
+    """True for serial-drive joints (hip/knee); False for parallel ankles."""
+    return any(h in joint for h in SERIAL_JOINT_HINTS)
 
 
 def _as_1d_float(x):
@@ -122,8 +129,12 @@ def fit_dynamics(tau_res, qdd, qd, gyro=None, eps=0.05):
     """Fit  tau_res = J_eff*qdd + tau_c*tanh(qd/eps) + tau_v*qd + c0 [+G*gyro].
 
     tau_res [Nm] must already have the suspended gravity torque g(q) removed.
-    gyro: optional (n,3) base angular velocity to absorb sling coupling.
-    Returns dict(J_eff, tau_c, tau_v, c0, gyro_coef, R2, n).
+    gyro: optional (n,3) base angular velocity to absorb sling coupling
+    (apply to serial joints whose step excites base motion — hips AND knees:
+    knee gyro_rms 0.29 rad/s is the largest among serial joints).
+    Returns dict(J_eff, tau_c, tau_v, c0, gyro_coef, R2, n, se_*) where se_*
+    are the IRLS weighted-least-squares standard errors of the coefficients
+    (cov = s^2 (X'WX)^-1), used by the J2 symmetry significance screen.
     """
     tau_res = _as_1d_float(tau_res)
     qdd = _as_1d_float(qdd)
@@ -141,6 +152,19 @@ def fit_dynamics(tau_res, qdd, qd, gyro=None, eps=0.05):
     X, y = X[ok], tau_res[ok]
     beta, w = irls_huber_fit(X, y, n_iter=3)
     out = {names[i]: float(beta[i]) for i in range(len(names))}
+    # weighted-LS coefficient covariance: cov = s^2 (X'WX)^-1 with
+    # s^2 = sum(w*r^2)/(n-p)  (IRLS final-weights sandwich is unnecessary
+    # here: the weights are deterministic functions of the residuals).
+    try:
+        XtWX = (X * w[:, None]).T @ X
+        r = y - X @ beta
+        s2 = float(np.sum(w * r * r)) / max(len(y) - X.shape[1], 1)
+        cov = s2 * np.linalg.inv(XtWX)
+        ses = np.sqrt(np.maximum(np.diag(cov), 0.0))
+        for i, nm in enumerate(names):
+            out[f"se_{nm}"] = float(ses[i])
+    except np.linalg.LinAlgError:
+        pass
     out["R2"] = float(r_squared(y, X @ beta))
     out["n"] = int(ok.sum())
     out["frac_weighted"] = float(np.mean(w < 0.999))

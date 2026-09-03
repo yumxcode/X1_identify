@@ -97,9 +97,9 @@ data/raw/ 放入新数据（保持原始文件名）
 
 | 方法 | 脚本 | 状态 |
 |---|---|---|
-| SPI 采样式白盒辨识（CMA-ES + MuJoCo 开环回放，多数据集 train/cross 分桶） | `spi_identify/scripts/run_spi.py` | ✅ R8 多数据集辨识 + T6b 五项判定 |
-| SPI 完成标准五项验证（含 CROSS-DATASET 跨策略） | `spi_identify/scripts/validate_spi.py` | ✅（地板 12.7/14.8 分层再基线） |
-| 关节模组辨识（摩擦/惯量/延迟/增益/电流映射 + 语义守卫） | `joint_identify/scripts/run_joint_identify.py` | 🔄 T6b GATE-J1..J5 |
+| SPI 采样式白盒辨识（CMA-ES + MuJoCo 开环回放，多数据集 train/cross 分桶） | `spi_identify/scripts/run_spi.py` | ✅ R9 域内辨识 + T9 终判五项全 PASS（exit 0） |
+| SPI 完成标准五项验证（含 CROSS-DATASET 跨策略） | `spi_identify/scripts/validate_spi.py` | ✅（地板 14.04/14.24 分层，仅域内证据计价） |
+| 关节模组辨识（摩擦/惯量/延迟/增益/电流映射 + 语义守卫） | `joint_identify/scripts/run_joint_identify.py` | ⚠️ T9 终判：J4/J5 PASS，J1/J2/J3 边际 FAIL（根因量化，参数以参考值交付，见报告 §3.2/§7） |
 | 阶跃数据 M1 回归（κs 锚定） | `data/derived/step_m1_regression_all.json` | ✅ |
 | 质量-代价地形诊断 | `spi_identify/scripts/mass_landscape.py` | ✅ |
 | GRF 整机质量估计（多数据集 G6 v2 分组一致性） | `prime_identify/scripts/gm_validate.py` | ✅（直行 35.94 kg；侧移 -14% 方法限制实证） |
