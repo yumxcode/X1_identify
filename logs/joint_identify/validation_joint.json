@@ -1,0 +1,53 @@
+{
+  "verdict": "FAIL",
+  "exit_code": 1,
+  "checks": [
+    {
+      "id": "J1_DYNAMICS_R2",
+      "ok": false,
+      "detail": "left_hip_roll_joint R2=0.535<0.55; left_knee_pitch_joint R2=0.572<0.6; right_knee_pitch_joint R2=0.549<0.6"
+    },
+    {
+      "id": "J2_LR_SYMMETRY",
+      "ok": false,
+      "detail": "worst left_knee_pitch_joint|right_knee_pitch_joint.tau_v rel_diff=81.07 (> 0.35, sig=14.5 sigma); 4 violations / 16 pairs"
+    },
+    {
+      "id": "J3_GAIN_BAND",
+      "ok": false,
+      "detail": "left_hip_roll_joint alpha=0.831 outside (0.34, 0.71)+-0.10"
+    },
+    {
+      "id": "J4_DELAY",
+      "ok": true,
+      "detail": "serial delays within (-5.0, 30.0) ms: left_hip_pitch_joint:9.0, left_hip_roll_joint:9.0, left_hip_yaw_joint:7.0, left_knee_pitch_joint:9.0, right_hip_pitch_joint:9.0, right_hip_roll_joint:8.0, right_hip_yaw_joint:6.0, right_knee_pitch_joint:9.0"
+    },
+    {
+      "id": "J5_CURRENT_MAP",
+      "ok": true,
+      "detail": "kt R2 >= 0.9 on all 12 joints"
+    }
+  ],
+  "warnings": [
+    "left_hip_yaw_joint alpha=0.528 vs M1 0.339 (dev>= 0.15, method systematics)"
+  ],
+  "n_serial": 8,
+  "n_parallel_reported": 4,
+  "gates": {
+    "J1_r2_floor": {
+      "hip": 0.55,
+      "knee": 0.6
+    },
+    "J2_symmetry_tol": 0.35,
+    "J3_alpha_band": [
+      0.34,
+      0.71
+    ],
+    "J3_m1_max_dev": 0.15,
+    "J4_delay_ms": [
+      -5.0,
+      30.0
+    ],
+    "J5_kt_r2_min": 0.9
+  }
+}
