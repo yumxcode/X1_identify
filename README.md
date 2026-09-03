@@ -4,17 +4,17 @@
 > **上游**：[weilai-robot/F1](https://github.com/weilai-robot/F1)（正式代码发布项目，含数据观测体系 `doc/测试体系/` D0–D7）。
 > **执行约束**：一切验证走 gradmotion 远端，本地不装依赖、不跑训练/仿真。
 
-## 1. 项目现状（2026-09-02 晚，结论先行）
+## 1. 项目现状（2026-09-03，结论先行）
 
-**多数据集辨识轮已完成辨识与再基线，正式判定进行中（T6b TASK_20260902_221）**：新数据 10 条（270 s，三策略组）入 train/cross 双桶，R8 辨识产出 + 五项完成标准（新增 CROSS-DATASET 跨策略验证）+ 关节模组层 GATE-J1..J5 + GRF 质量跨数据集一致性（G6 v2）。
+**多数据集辨识轮已完成并正式判定**（最终报告：[docs/rounds/2026-09-03_multidataset_sysid_report.md](docs/rounds/2026-09-03_multidataset_sysid_report.md)）：
 
 | 结论 | 状态 | 依据 |
 |---|---|---|
-| **SPI 多数据集辨识（现行基准 R8）**：骨盆 4.031 kg（-6.3%）、κs 0.361、holdout eff 0.296 / 比力 12.21、跨策略 ratio 0.326 | 🔄 T6b 判定中 | `spi_identify/results/r8_newdata_identified_params.json` |
-| **SPI 单数据闭环（R4+R7）**：骨盆 3.428 kg、κs 0.396、四项全过；R4 参数跨策略 ratio 0.318（泛化优） | ✅ PASS | TASK_20260902_034 / T1 复验 |
+| **SPI 多数据集辨识（现行基准 R9）**：骨盆 3.152 kg（域内）、κs 0.370、holdout eff 0.358 / 比力 13.541≤14.04、跨策略 ratio 0.307 / 比力 13.940≤14.24 —— **五项全 PASS** | ✅ **PASS** | T9 TASK_20260903_073 exit 0，`spi_identify/results/r9_indomain_params.json` |
+| **SPI 单数据闭环（R4+R7）**：骨盆 3.428 kg、κs 0.396、四项全过；R4 参数跨策略 ratio 0.318 | ✅ PASS | TASK_20260902_034 / T1 复验 |
 | **F1 v15 交叉基准**：两环境互洽 | ✅ PASS | TASK_20260902_030 |
-| **关节模组辨识（joint_identify）**：摩擦/惯量/延迟/增益/电流映射 + GATE-J1..J5 | 🔄 T6b 判定中 | 19 单测 + 冒烟（延迟 8-9 ms、kt R²=1.0） |
-| **GRF 整机质量跨数据集**：直行组均值 35.94 kg（n=7，URDF 35.32 +1.8%）；侧移组 -14% 为方法工况敏感性实证 | ✅ G6 v2 PASS | `gm_validation_multidataset.json` |
+| **关节模组辨识（joint_identify）**：延迟 6–9 ms（J4 PASS）、k_t R²=1.000（J5 PASS）；J1 knee R² 0.50 / J2 摩擦项不对称 / J3 hip_roll α 0.831 边际 FAIL（根因量化见报告 §3.2） | ⚠️ 部分 PASS | T9（19 单测 + 12 文件语义守卫全过） |
+| **GRF 整机质量跨数据集**：直行组均值 35.94 kg（n=7，URDF+1.8%）；侧移组 -14% 为方法工况敏感性实证 | ✅ G6 v2 PASS | `gm_validation_multidataset.json` |
 | **全身惯性参数回归（PRIME 路线）**：无基座线运动传感时原理性不可辨识 | ❌ 已证伪 | 7 实验证据链，`prime_identify/IDENTIFIABILITY.md` |
 | **SPI-Active 主动激励（Stage-2）** | ⏸ 待多行为策略 | `spi_identify/active/` 代码就绪 |
 
