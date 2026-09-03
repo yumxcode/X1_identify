@@ -340,16 +340,46 @@ def project_to_physical_domain(params: Dict, bodies_cfg: Sequence[Dict]) -> Dict
 
 def physical_range_penalty(params: Dict, bodies_cfg: Sequence[Dict],
                            scale: float = 1e5) -> float:
-    """Hard constraint: steep quadratic penalty per unit of violation.
+    """Hard constraint: steep quadratic penalty per unit of RELATIVE violation.
 
-    Units: mass [kg]^2, com [m]^2, inertia [kg·m^2]^2. The v^2*max(v,1) form
-    makes small violations cheap but large ones effectively rejected: at the
-    default scale 1e5 a 1-unit violation costs 1e5, a 2-unit violation 8e5 —
-    comparable to the prediction cost scale (~1e5-1e6), so the CMA-ES optimum
-    cannot escape into implausible mass/inertia values.
+    T7 evidence (2026-09-02): the legacy absolute v^2*max(v,1) form is
+    dimensionally weak for inertia-sized quantities — an inertia-offdiag
+    violation of 0.017 kg·m^2 cost only ~29k at scale 1e8 while the
+    multi-dataset accel gain was ~1.2e5, so the optimizer freely left the
+    domain (and the post-hoc projection then degraded the metrics by +10%).
+    Violations are therefore normalized by the range SPAN of their quantity
+    (mass span, com span, inertia span) before squaring: a violation of 10%
+    of span costs scale*0.01 at any parameter magnitude — uniform bite across
+    quantities. At the default scale 1e8, a 5%-of-span violation (~25k kg²
+    equivalent for mass, 3e-3 for inertia) already costs 2.5e5, dominating
+    prediction-cost differences of the CMA-ES plateau.
     """
     total = 0.0
-    for body, viol in physical_violations(params, bodies_cfg).items():
+    for b, viol in _relative_violations(params, bodies_cfg).items():
         for v in viol.values():
             total += v * v * max(v, 1.0)
     return scale * total
+
+
+def _relative_violations(params: Dict, bodies_cfg: Sequence[Dict]) -> Dict[str, Dict[str, float]]:
+    """physical_violations normalized by each quantity's range span."""
+    out: Dict[str, Dict[str, float]] = {}
+    for b in bodies_cfg:
+        p = params["bodies"][b["name"]]
+        viol = physical_violations(params, [b]).get(b["name"], {})
+        if not viol:
+            continue
+        m_lo, m_hi = b["mass_range"]
+        c_lo, c_hi = b["com_range"]
+        i_lo, i_hi = b["inertia_diag_range"]
+        od_max = b.get("inertia_offdiag_max")
+        spans = {"mass": m_hi - m_lo,
+                 "com_x": c_hi - c_lo, "com_y": c_hi - c_lo, "com_z": c_hi - c_lo,
+                 "inertia_x": i_hi - i_lo, "inertia_y": i_hi - i_lo,
+                 "inertia_z": i_hi - i_lo}
+        if od_max is not None:
+            spans.update({"inertia_xy": 2 * od_max, "inertia_xz": 2 * od_max,
+                          "inertia_yz": 2 * od_max})
+        rel = {k: v / max(spans.get(k, 1.0), 1e-9) for k, v in viol.items()}
+        out[b["name"]] = rel
+    return out

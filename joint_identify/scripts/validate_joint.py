@@ -53,14 +53,20 @@ def is_serial(joint):
 
 
 def _pairwise_symmetry(jparams):
-    """Relative difference of same-name L/R joints for keyed scalars."""
+    """Relative difference of same-name L/R joints for keyed scalars.
+
+    SERIAL joints only: parallel ankles are torque-driven (their serial-
+    dynamics fit is outside the model's validity — T7 R2 0.16-0.43 and
+    sign-flipping tau_v are drive-mode artifacts, not robot asymmetry).
+    """
     out = []
     nested = {"J_eff": ("dynamics", "J_eff"), "tau_c": ("dynamics", "tau_c"),
               "tau_v": ("dynamics", "tau_v"), "kt": ("kt", "kt")}
-    lefts = [j for j in jparams if j.startswith("left_")]
+    lefts = [j for j in jparams
+             if j.startswith("left_") and is_serial(j)]
     for lj in lefts:
         rj = "right_" + lj[len("left_"):]
-        if rj not in jparams:
+        if rj not in jparams or not is_serial(rj):
             continue
         for key, (sub, field) in nested.items():
             def val(jn):
