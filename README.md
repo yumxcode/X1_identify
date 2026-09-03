@@ -13,7 +13,7 @@
 | **SPI 多数据集辨识（现行基准 R9）**：骨盆 3.152 kg（域内）、κs 0.370、holdout eff 0.358 / 比力 13.541≤14.04、跨策略 ratio 0.307 / 比力 13.940≤14.24 —— **五项全 PASS** | ✅ **PASS** | T9 TASK_20260903_073 exit 0，`spi_identify/results/r9_indomain_params.json` |
 | **SPI 单数据闭环（R4+R7）**：骨盆 3.428 kg、κs 0.396、四项全过；R4 参数跨策略 ratio 0.318 | ✅ PASS | TASK_20260902_034 / T1 复验 |
 | **F1 v15 交叉基准**：两环境互洽 | ✅ PASS | TASK_20260902_030 |
-| **关节模组辨识（joint_identify）**：延迟 6–9 ms（J4 PASS）、k_t R²=1.000（J5 PASS）；J1 knee R² 0.50 / J2 摩擦项不对称 / J3 hip_roll α 0.831 边际 FAIL（根因量化见报告 §3.2） | ⚠️ 部分 PASS | T9（19 单测 + 12 文件语义守卫全过） |
+| **关节模组辨识（joint_identify）**：延迟 6–9 ms（J4 PASS）、k_t R²=1.000（J5 PASS）；J1 knee R² 0.50 / J2 摩擦项不对称 / J3 hip_roll α 0.831 边际 FAIL（根因量化见报告 §3.2） | ⚠️ 部分 PASS | T9/T10（现 24 单测，T9 时点 19；12 文件语义守卫全过） |
 | **GRF 整机质量跨数据集**：直行组均值 35.94 kg（n=7，URDF+1.8%）；侧移组 -14% 为方法工况敏感性实证 | ✅ G6 v2 PASS | `gm_validation_multidataset.json` |
 | **全身惯性参数回归（PRIME 路线）**：无基座线运动传感时原理性不可辨识 | ❌ 已证伪 | 7 实验证据链，`prime_identify/IDENTIFIABILITY.md` |
 | **SPI-Active 主动激励（Stage-2）** | ⏸ 待多行为策略 | `spi_identify/active/` 代码就绪 |
@@ -57,7 +57,7 @@ X1_辨识/
 │   ├── regress.py             纯 numpy 回归原语（IRLS/SG 微分/互相关/语义守卫）
 │   ├── gravity_torque.py      悬空重力矩 LUT（lazy mujoco qfrc_bias）
 │   ├── scripts/               run_joint_identify / validate_joint(GATE-J1..J5) / remote_finalize
-│   └── tests/                 19 单测
+│   └── tests/                 24 单测
 │
 ├── deploy/sim2real/         ── 实机轮次 runbook（SPI-Active / UAN / PACE）
 ├── X1_infer/                  部署框架（MJCF 模型来源，与 F1 同源）

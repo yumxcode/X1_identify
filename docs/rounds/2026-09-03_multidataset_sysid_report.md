@@ -172,7 +172,7 @@
 | 关节级辨识 + GATE-J | `gm-run X1_identify/joint_identify/scripts/run_joint_identify.py` | `logs/joint_identify/{joint_params.json, validation_joint.json}` |
 | 合并终判（关节+SPI） | `gm-run X1_identify/joint_identify/scripts/remote_finalize.py [--params-file=PATH]` | 两份 validation |
 | GRF 质量多数据集 + G6 | `gm-run X1_identify/prime_identify/scripts/gm_validate.py` | `prime_identify/results/gm_validation.json` |
-| 本地单测（无仿真依赖） | `python -m unittest discover -s spi_identify/tests`（68）/ `-s joint_identify/tests`（19） | — |
+| 本地单测（无仿真依赖） | `python -m unittest discover -s spi_identify/tests`（68）/ `-s joint_identify/tests`（24） | — |
 
 远端任务台账：T1 188 / T2 192-194 / T5 201 / T6b 221 / T7 222 / T8 TASK_20260903_015 / T9 TASK_20260903_073（日志归档 `spi_identify/results/remote_logs/`）。
 
