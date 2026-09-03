@@ -1,0 +1,29 @@
+test_recovers_known_lag (test_regress.TestDelay.test_recovers_known_lag) ... ok
+test_zero_lag (test_regress.TestDelay.test_zero_lag) ... ok
+test_gyro_coupling_absorbed (test_regress.TestFitDynamics.test_gyro_coupling_absorbed) ... ok
+test_knee_like_signal_gyro_helps (test_regress.TestFitDynamics.test_knee_like_signal_gyro_helps) ... ok
+test_recovers_params (test_regress.TestFitDynamics.test_recovers_params) ... ok
+test_se_brackets_true_param (test_regress.TestFitDynamics.test_se_brackets_true_param) ... ok
+test_se_returns_and_scales_with_noise (test_regress.TestFitDynamics.test_se_returns_and_scales_with_noise) ... ok
+test_all_pass (test_regress.TestGates.test_all_pass) ... ok
+test_edge_alpha_just_outside_band_passes (test_regress.TestGates.test_edge_alpha_just_outside_band_passes) ... ok
+test_fail_on_alpha_out_of_band (test_regress.TestGates.test_fail_on_alpha_out_of_band) ... ok
+test_fail_on_asymmetry (test_regress.TestGates.test_fail_on_asymmetry) ... ok
+test_fail_on_delay_range (test_regress.TestGates.test_fail_on_delay_range) ... ok
+test_fail_on_low_r2 (test_regress.TestGates.test_fail_on_low_r2) ... ok
+test_fail_on_m1_deviation_now_warns (test_regress.TestGates.test_fail_on_m1_deviation_now_warns) ... ok
+test_is_serial (test_regress.TestGates.test_is_serial) ... ok
+test_j2_significance_screen_suppresses_noise_dominated (test_regress.TestGates.test_j2_significance_screen_suppresses_noise_dominated) ... ok
+test_j2_significant_asymmetry_still_fails (test_regress.TestGates.test_j2_significant_asymmetry_still_fails) ... ok
+test_knee_below_target_is_warn_not_fail (test_regress.TestGates.test_knee_below_target_is_warn_not_fail) ... ok
+test_outlier_robustness (test_regress.TestIRLS.test_outlier_robustness) ... ok
+test_kt_recovers_slope (test_regress.TestM1AndKt.test_kt_recovers_slope) ... ok
+test_m1_recovers_alpha (test_regress.TestM1AndKt.test_m1_recovers_alpha) ... ok
+test_recovers_constant_accel (test_regress.TestSavgol.test_recovers_constant_accel) ... ok
+test_feedback_detected (test_regress.TestSemantics.test_feedback_detected) ... ok
+test_target_columns_rejected (test_regress.TestSemantics.test_target_columns_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 24 tests in 0.023s
+
+OK

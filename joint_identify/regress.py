@@ -11,9 +11,10 @@ Design contract
 
 Serial-joint suspended dynamics model (hip*/knee; ankles are parallel drive):
     tau_meas - g(q) = J_eff*qdd + tau_c*tanh(qd/eps) + tau_v*qd + c0 [+ G*gyro]
-The optional imu_gyro regressors absorb sling/base-motion coupling for hip
-joints (fixed-base regression historically only reached R^2 0.19-0.31 there;
-knee gyro RMS ~0.007 rad/s vs hip ~0.19 rad/s in data/derived M1 evidence).
+The optional imu_gyro regressors absorb sling/base-motion coupling and apply
+to ALL serial joints (knee gyro_rms ~0.29 rad/s is the LARGEST serial value —
+hip ~0.19, ankle_roll ~0.009; evidence: data/derived/step_m1_regression_all.json
+gyro_rms fields; T10 extended coupling from hip-only to every serial joint).
 
 Actuation-gain (M1) model, must stay compatible with
 data/derived/step_m1_regression_all.json (alpha evidence band 0.34..0.71 on

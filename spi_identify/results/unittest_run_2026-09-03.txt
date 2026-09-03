@@ -1,0 +1,74 @@
+test_denormalize (test_active.TestBezier.test_denormalize) ... ok
+test_endpoints (test_active.TestBezier.test_endpoints) ... ok
+test_partition_of_unity (test_active.TestBezier.test_partition_of_unity) ... ok
+test_fd_jacobian_linear (test_active.TestFIM.test_fd_jacobian_linear) ... ok
+test_fim_psd_and_a_opt (test_active.TestFIM.test_fim_psd_and_a_opt) ... ok
+test_singular_fim_fallback (test_active.TestFIM.test_singular_fim_fallback) ... ok
+test_accel_box_filter_smooths_spikes (test_cost.TestPredictionCost.test_accel_box_filter_smooths_spikes) ... ok
+test_accel_disabled_when_weight_zero (test_cost.TestPredictionCost.test_accel_disabled_when_weight_zero) ... ok
+test_accel_nan_ref_masked (test_cost.TestPredictionCost.test_accel_nan_ref_masked) ... ok
+test_accel_term_scales_with_weight (test_cost.TestPredictionCost.test_accel_term_scales_with_weight) ... ok
+test_box_filter_constant_preserved (test_cost.TestPredictionCost.test_box_filter_constant_preserved) ... ok
+test_box_filter_identity_for_win1 (test_cost.TestPredictionCost.test_box_filter_identity_for_win1) ... ok
+test_box_filter_preserves_length_and_edges (test_cost.TestPredictionCost.test_box_filter_preserves_length_and_edges) ... ok
+test_masked_joints_excluded (test_cost.TestPredictionCost.test_masked_joints_excluded) ... ok
+test_nan_tau_ignored (test_cost.TestPredictionCost.test_nan_tau_ignored) ... ok
+test_per_signal_breakdown_sums_to_total (test_cost.TestPredictionCost.test_per_signal_breakdown_sums_to_total) ... ok
+test_positive_when_different (test_cost.TestPredictionCost.test_positive_when_different) ... ok
+test_weights_from_dict_rejects_unknown (test_cost.TestPredictionCost.test_weights_from_dict_rejects_unknown) ... ok
+test_zero_when_sim_equals_ref (test_cost.TestPredictionCost.test_zero_when_sim_equals_ref) ... ok
+test_positive_for_different (test_cost.TestQuatErr.test_positive_for_different) ... ok
+test_sign_invariant (test_cost.TestQuatErr.test_sign_invariant) ... ok
+test_zero_for_identical (test_cost.TestQuatErr.test_zero_for_identical) ... ok
+test_parse_and_segment (test_dataset.TestDataset.test_parse_and_segment) ... ok
+test_real_csv_if_present (test_dataset.TestDataset.test_real_csv_if_present) ... ok
+test_meshdir_resolves_to_x1_infer_meshes (test_mjcf_compat.TestMjcfCompat.test_meshdir_resolves_to_x1_infer_meshes) ... ok
+test_no_mujoco3_only_elements (test_mjcf_compat.TestMjcfCompat.test_no_mujoco3_only_elements) ... ok
+test_vendored_equals_source_minus_3x_sensors (test_mjcf_compat.TestMjcfCompat.test_vendored_equals_source_minus_3x_sensors)
+Drift guard: vendored copy must track the X1_infer source exactly, ... ok
+test_vendored_exists (test_mjcf_compat.TestMjcfCompat.test_vendored_exists) ... ok
+test_U_upper_triangular_positive_diag (test_param_space.TestLogCholesky.test_U_upper_triangular_positive_diag) ... ok
+test_any_phi_is_feasible (test_param_space.TestLogCholesky.test_any_phi_is_feasible) ... ok
+test_roundtrip (test_param_space.TestLogCholesky.test_roundtrip) ... ok
+test_search_box_valid (test_param_space.TestLogCholesky.test_search_box_valid) ... ok
+test_saturation (test_param_space.TestMotorModel.test_saturation) ... ok
+test_small_command_linear (test_param_space.TestMotorModel.test_small_command_linear) ... ok
+test_dim (test_param_space.TestParamSpace.test_dim) ... ok
+test_regularization_grows (test_param_space.TestParamSpace.test_regularization_grows) ... ok
+test_regularization_zero_at_nominal (test_param_space.TestParamSpace.test_regularization_zero_at_nominal) ... ok
+test_to_json (test_param_space.TestParamSpace.test_to_json) ... ok
+test_inertia_boundary_in_range (test_param_space.TestPhysicalRangePenalty.test_inertia_boundary_in_range) ... ok
+test_nominal_no_violation (test_param_space.TestPhysicalRangePenalty.test_nominal_no_violation) ... ok
+test_offdiag_violation_detected (test_param_space.TestPhysicalRangePenalty.test_offdiag_violation_detected) ... ok
+test_out_of_range_detected (test_param_space.TestPhysicalRangePenalty.test_out_of_range_detected) ... ok
+test_all_axes_clipped (test_param_space.TestProjectToPhysicalDomain.test_all_axes_clipped) ... ok
+test_in_domain_params_unchanged (test_param_space.TestProjectToPhysicalDomain.test_in_domain_params_unchanged) ... ok
+test_motors_and_kappa_s_pass_through (test_param_space.TestProjectToPhysicalDomain.test_motors_and_kappa_s_pass_through) ... ok
+test_r8_scenario_offdiag_projected (test_param_space.TestProjectToPhysicalDomain.test_r8_scenario_offdiag_projected) ... ok
+test_disabled (test_validate.TestAccelRms.test_disabled) ... ok
+test_math (test_validate.TestAccelRms.test_math) ... ok
+test_accel_disabled_skips_check (test_validate.TestAssess.test_accel_disabled_skips_check) ... ok
+test_accel_floor_configurable_and_strict (test_validate.TestAssess.test_accel_floor_configurable_and_strict) ... ok
+test_actuator_band_from_config (test_validate.TestAssess.test_actuator_band_from_config) ... ok
+test_boundary_warning_on_kappa_s (test_validate.TestAssess.test_boundary_warning_on_kappa_s) ... ok
+test_config_thresholds_apply (test_validate.TestAssess.test_config_thresholds_apply) ... ok
+test_fail_when_accel_not_improving_enough (test_validate.TestAssess.test_fail_when_accel_not_improving_enough) ... ok
+test_fail_when_accel_rms_too_high (test_validate.TestAssess.test_fail_when_accel_rms_too_high) ... ok
+test_fail_when_kappa_s_outside_actuator_band (test_validate.TestAssess.test_fail_when_kappa_s_outside_actuator_band) ... ok
+test_fail_when_no_holdout_improvement (test_validate.TestAssess.test_fail_when_no_holdout_improvement) ... ok
+test_fail_when_physically_implausible (test_validate.TestAssess.test_fail_when_physically_implausible) ... ok
+test_pass_for_good_identification (test_validate.TestAssess.test_pass_for_good_identification) ... ok
+test_grades (test_validate.TestCredibility.test_grades) ... ok
+test_cross_accel_disabled_uses_cost_only (test_validate.TestCrossDataset.test_cross_accel_disabled_uses_cost_only) ... ok
+test_cross_bar_uses_cross_nominal_not_holdout (test_validate.TestCrossDataset.test_cross_bar_uses_cross_nominal_not_holdout) ... ok
+test_cross_floor_configurable_separately (test_validate.TestCrossDataset.test_cross_floor_configurable_separately) ... ok
+test_fail_when_cross_accel_bar_misses (test_validate.TestCrossDataset.test_fail_when_cross_accel_bar_misses) ... ok
+test_fail_when_cross_cost_ratio_misses (test_validate.TestCrossDataset.test_fail_when_cross_cost_ratio_misses) ... ok
+test_no_cross_data_no_gate (test_validate.TestCrossDataset.test_no_cross_data_no_gate) ... ok
+test_pass_when_cross_generalizes (test_validate.TestCrossDataset.test_pass_when_cross_generalizes) ... ok
+test_deterministic_and_exhaustive (test_validate.TestSplitClips.test_deterministic_and_exhaustive) ... ok
+
+----------------------------------------------------------------------
+Ran 68 tests in 0.117s
+
+OK

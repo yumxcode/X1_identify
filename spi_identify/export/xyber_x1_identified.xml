@@ -1,5 +1,5 @@
 <mujoco model="zhiyuan scene">
-  <compiler angle="radian" eulerseq="XYZ" meshdir="../meshes" autolimits="true" />
+  <compiler angle="radian" eulerseq="XYZ" meshdir="../../../X1_infer/module/sim_module/model/meshes" autolimits="true" />
 
   <option timestep="0.001" />
 
@@ -66,7 +66,7 @@
 
   <worldbody>
     <body name = "x1-body" pos = "0 0 0.7">
-      <inertial pos="0.00121280 -0.00819587 -0.01617872" mass="3.78305736" diaginertia="0.03857225 0.11022465 0.13832502" quat="0.59188263 -0.80135926 -0.03455344 0.07939988"/>
+      <inertial pos="0.02255454 0.02409425 -0.01261008" mass="3.15196154" diaginertia="0.01378600 0.10878429 0.11796184" quat="0.89865206 -0.42267434 0.01020434 0.11690487"/>
       <freejoint name="floating_base"/>
       <geom type="mesh" rgba="0.8 0.4 0 1" mesh="mesh_base_link_simple" />
       <geom type="mesh" rgba="0.8 0.4 0 1" mesh="mesh_base_link_simple" class = "collision"/>
@@ -390,39 +390,10 @@
     <jointvel name = "jointvel_right_ankle_roll" joint = "right_ankle_roll_joint" noise = "0" />
    
     <!-- effort -->
-    <jointactuatorfrc name = "jointeffort_lumbar_yaw" joint = "lumbar_yaw_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_lumbar_roll" joint = "lumbar_roll_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_lumbar_pitch" joint = "lumbar_pitch_joint" noise = "0" />
 
-    <jointactuatorfrc name = "jointeffort_left_shoulder_pitch" joint = "left_shoulder_pitch_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_left_shoulder_roll" joint = "left_shoulder_roll_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_left_shoulder_yaw" joint = "left_shoulder_yaw_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_left_elbow_pitch" joint = "left_elbow_pitch_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_left_elbow_yaw" joint = "left_elbow_yaw_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_left_wrist_pitch" joint = "left_wrist_pitch_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_left_wrist_roll" joint = "left_wrist_roll_joint" noise = "0" />
 
-    <jointactuatorfrc name = "jointeffort_right_shoulder_pitch" joint = "right_shoulder_pitch_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_right_shoulder_roll" joint = "right_shoulder_roll_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_right_shoulder_yaw" joint = "right_shoulder_yaw_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_right_elbow_pitch" joint = "right_elbow_pitch_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_right_elbow_yaw" joint = "right_elbow_yaw_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_right_wrist_pitch" joint = "right_wrist_pitch_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_right_wrist_roll" joint = "right_wrist_roll_joint" noise = "0" />
 
-    <jointactuatorfrc name = "jointeffort_left_hip_pitch" joint = "left_hip_pitch_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_left_hip_roll" joint = "left_hip_roll_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_left_hip_yaw" joint = "left_hip_yaw_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_left_knee_pitch" joint = "left_knee_pitch_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_left_ankle_pitch" joint = "left_ankle_pitch_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_left_ankle_roll" joint = "left_ankle_roll_joint" noise = "0" />
 
-    <jointactuatorfrc name = "jointeffort_right_hip_pitch" joint = "right_hip_pitch_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_right_hip_roll" joint = "right_hip_roll_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_right_hip_yaw" joint = "right_hip_yaw_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_right_knee_pitch" joint = "right_knee_pitch_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_right_ankle_pitch" joint = "right_ankle_pitch_joint" noise = "0" />
-    <jointactuatorfrc name = "jointeffort_right_ankle_roll" joint = "right_ankle_roll_joint" noise = "0" />
   </sensor>
 
 
