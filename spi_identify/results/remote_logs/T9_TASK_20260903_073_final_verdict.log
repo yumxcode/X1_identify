@@ -219,3 +219,12 @@ OK
 
 [finalize] joint rc=1 | spi rc=0
 [finalize] FINAL: FAIL
+
+================================================================================
+[勘误注记 2026-09-03，append-only] 本日志第 116/218 行的段落标签 "(5 criteria,
+R8-projected params)" 为 remote_finalize.py 当时的过期打印标签；实际验证的参数集
+以第 116 行命令行为准：--params spi_identify/results/r9_indomain_params.json
+（即 T9 终判对象 R9 域内参数，与本日志 validation.json 数字一致：holdout 0.358/
+13.541、cross 0.307/13.940、kappa_s 0.370）。标签已在 commit 后续修复为
+"R9 in-domain params"（默认参数同步改为 r9_indomain_params.json）。
+================================================================================

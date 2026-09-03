@@ -44,7 +44,7 @@ X1_辨识/
 │   ├── active/                SPI-Active Stage-2（FIM + Bézier，待多行为策略）
 │   ├── configs/x1_spi.yaml    参数空间 / 代价权重 / 数据源（全部可配）
 │   ├── scripts/               prepare / run_spi / validate / apply / remote_sysid …
-│   ├── tests/                 57 单测（53 numpy 级 + 4 vendored MJCF 守卫）
+│   ├── tests/                 68 单测（64 numpy 级 + 4 vendored MJCF 守卫）
 │   ├── results/               辨识参数 + R1–R7 远端任务日志（原生基准在此）
 │   └── export/                导出工件（辨识 URDF / MJCF / DR 配置 / 报告）
 │
