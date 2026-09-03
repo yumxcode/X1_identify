@@ -1,0 +1,194 @@
+deps OK: mujoco 2.3.6 | optuna 4.5.0 | cmaes 0.12.0
+test_pass_when_cross_generalizes (test_validate.TestCrossDataset) ... ok
+test_deterministic_and_exhaustive (test_validate.TestSplitClips) ... ok
+
+----------------------------------------------------------------------
+Ran 68 tests in 0.285s
+
+OK
+[prepare] parsing (train) /workspace/X1_identify/data/raw/20260902_x1data/7500model_addDR/walk_diag_20260831_141833.csv
+[prepare]   7 clips (dt=10.00 ms)
+[prepare] parsing (train) /workspace/X1_identify/data/raw/20260902_x1data/7500model_addDR/walk_diag_20260831_142556.csv
+[prepare]   51 clips (dt=10.00 ms)
+[prepare] parsing (train) /workspace/X1_identify/data/raw/20260902_x1data/7500model_addDR/walk_diag_20260901_155946.csv
+[prepare]   40 clips (dt=10.00 ms)
+[prepare] parsing (train) /workspace/X1_identify/data/raw/20260902_x1data/7500model_addDR/walk_diag_20260902_093745.csv
+[prepare]   11 clips (dt=10.00 ms)
+[prepare] parsing (train) /workspace/X1_identify/data/raw/20260902_x1data/7500model_addDR/walk_diag_20260902_094252.csv
+[prepare]   13 clips (dt=10.00 ms)
+[prepare] parsing (train) /workspace/X1_identify/data/raw/20260902_x1data/7500model/walk_diag_20260901_163320.csv
+[prepare]   8 clips (dt=10.00 ms)
+[prepare] parsing (cross) /workspace/X1_identify/data/raw/20260902_x1data/5999model/walk_diag_20260818_103839.csv
+[prepare]   13 clips (dt=10.00 ms)
+[prepare] parsing (cross) /workspace/X1_identify/data/raw/20260902_x1data/5999model/walk_diag_20260818_144943.csv
+[prepare]   9 clips (dt=10.00 ms)
+[prepare] parsing (cross) /workspace/X1_identify/data/raw/20260902_x1data/5999model/walk_diag_20260820_144337.csv
+[prepare]   13 clips (dt=10.00 ms)
+[prepare] parsing (cross) /workspace/X1_identify/data/raw/20260902_x1data/5999model/walk_diag_20260825_160521.csv
+[prepare]   6 clips (dt=10.00 ms)
+[prepare] parsing (cross) /workspace/X1_identify/data/raw/walk_diag_20260824_103222.csv
+[prepare]   10 clips (dt=10.00 ms)
+[prepare] saved 48 train clips -> data/derived/x1_clips.npz
+[prepare] saved 51 cross clips -> data/derived/x1_cross_clips.npz
+[spi] nominal-params prediction cost: 3664854.2777
+[spi] best cost 1052364.6478 (nominal was 3664854.2777)
+[spi] holdout val cost: best 423403.7179 vs nominal 1184627.3109
+{
+  "bodies": {
+    "base": {
+      "mass": 3.1519615384257644,
+      "com": "[ 0.02255454  0.02409425 -0.01261008]",
+      "inertia": "[[ 0.01900623 -0.01917668  0.01034941]\n [-0.01917668  0.11025736  0.0067361 ]\n [ 0.01034941  0.0067361   0.11126854]]"
+    }
+  },
+  "motors": {
+    "hip_pitch": 76.05733927598162,
+    "hip_rolleyaw": 39.75707053778301,
+    "knee": 73.06738339710581,
+    "ankle": 19.763074805608767
+  },
+  "kappa_s": 0.3700928084351175
+}
+[spi] saved logs/spi_sysid/gm_play/identified_params.pt
+[spi] done
+[validate] cross-dataset: 51 clips (meta groups: ['5999model', '5999model', '5999model', '5999model', 'legacy_20260824'])
+{
+  "verdict": "FAIL",
+  "exit_code": 1,
+  "checks": [
+    {
+      "id": "EFFECTIVENESS",
+      "ok": true,
+      "detail": "val cost best=423747.6 vs nominal=1184627.3 (ratio 0.358 <= 0.7)"
+    },
+    {
+      "id": "PHYSICAL",
+      "ok": true,
+      "detail": "all body params inside configured ranges"
+    },
+    {
+      "id": "ACCEL",
+      "ok": false,
+      "detail": "val accel RMS: best=13.541 nominal=17.289 m/s^2 (bar=min(15.0, max(12.7, 6.051))=12.7; floor branch=yes)"
+    },
+    {
+      "id": "ACTUATOR",
+      "ok": true,
+      "detail": "kappa_s=0.370 vs step-regression band [0.34, 0.71] (serial alpha: knee .55 / hip .34-.71)"
+    },
+    {
+      "id": "CROSS-DATASET",
+      "ok": true,
+      "detail": "cross-policy dataset cost ratio best/nominal=0.307 (<= 0.7); accel RMS best=13.940 nominal=22.262 m/s^2 (bar=14.800)"
+    }
+  ],
+  "warnings": [],
+  "credibility": {
+    "base.mass": "中",
+    "base.com": "中",
+    "base.inertia": "低",
+    "kappa.hip_pitch": "中",
+    "kappa.hip_rolleyaw": "高",
+    "kappa.knee": "中",
+    "kappa.ankle": "中",
+    "kappa_s": "中"
+  },
+  "costs": {
+    "train": {
+      "nominal": {
+        "quat": 2921.42,
+        "angvel": 64321.54,
+        "accel": 2155534.71,
+        "q": 60810.88,
+        "qd": 1306350.1,
+        "tau": 74915.64
+      },
+      "best": {
+        "quat": 3042.87,
+        "angvel": 6805.75,
+        "accel": 939667.65,
+        "q": 50084.85,
+        "qd": 42320.98,
+        "tau": 10446.47
+      }
+    },
+    "val": {
+      "nominal": {
+        "quat": 1130.94,
+        "angvel": 24623.33,
+        "accel": 623241.72,
+        "q": 17342.23,
+        "qd": 489211.73,
+        "tau": 29077.36
+      },
+      "best": {
+        "quat": 1212.81,
+        "angvel": 3104.71,
+        "accel": 382277.72,
+        "q": 17768.28,
+        "qd": 15466.33,
+        "tau": 3917.72
+      }
+    }
+  },
+  "accel_rms_val": 13.541,
+  "cross_dataset": {
+    "cost_ratio": 0.3066,
+    "accel_rms_best": 13.94,
+    "accel_rms_nominal": 22.262,
+    "accel_bar": 14.8,
+    "n_steps": 7445
+  },
+  "criteria": {
+    "effective_ratio": 0.7,
+    "accel_rms_max": 15.0,
+    "accel_improve_ratio": 0.35,
+    "accel_rms_floor": 12.7,
+    "actuator_kappa_s_band": [
+      0.34,
+      0.71
+    ]
+  }
+}
+[validate] verdict: FAIL (exit 1)
+[validate] report -> logs/spi_sysid/validation.json
+remote_sysid: validation exit code = 1
+[landscape] mass=3.1786 -> cost 1015045.1253
+[landscape] mass=3.3571 -> cost 1003769.5906
+[landscape] mass=3.5357 -> cost 997459.4138
+[landscape] mass=3.7143 -> cost 983818.2833
+[landscape] mass=3.8929 -> cost 996320.1250
+[landscape] mass=4.0714 -> cost 993345.7524
+[landscape] mass=4.2500 -> cost 995860.7578
+[landscape] mass=4.4286 -> cost 986544.6176
+[landscape] mass=4.6071 -> cost 986444.8721
+[landscape] mass=4.7857 -> cost 981782.9205
+[landscape] mass=4.9643 -> cost 983274.1096
+[landscape] mass=5.1429 -> cost 977341.3297
+[landscape] mass=5.3214 -> cost 970874.6707
+[landscape] mass=5.5000 -> cost 960951.3506
+[landscape] plot -> logs/mass_landscape/landscape.png
+[landscape] best mass = 5.5000 (cost 960951.3506)
+[apply] identified pelvis (raw): m=3.1520 com=[ 0.02255  0.02409 -0.01261] I_diag=[0.01901 0.11026 0.11127]
+[apply] exported pelvis      : m=3.1520 com=[ 0.02255  0.02409 -0.01261] I_diag=[0.01901 0.11026 0.11127]
+[apply] URDF -> spi_identify/export/x1_identified.urdf
+[apply] MJCF -> spi_identify/export/xyber_x1_identified.xml
+[apply] DR  -> spi_identify/export/dr_x1_spi.json
+[apply] report -> spi_identify/export/report.md
+remote_sysid: ALL DONE (validation rc=1)
+logs/:
+mass_landscape
+spi_sysid
+
+logs/mass_landscape:
+landscape.json
+landscape.png
+
+logs/spi_sysid:
+gm_play
+study.json
+validation.json
+
+logs/spi_sysid/gm_play:
+identified_params.json
+identified_params.pt
