@@ -15,3 +15,7 @@ P1V attempt 7, TERMINAL (2026-09-05, final round 2/2): pool EMPTY for 12h+ acros
 local keychain account probe TASK_20260905_033 run-rejected identically (draft status 0, zero logs, deleted).
 Seven attempts total, zero compute. Conclusion: P1V remote evidence is externally blocked until ANY gradmotion
 account is funded/replenished. Single-task recovery path (review §13) remains valid and unchanged.
+
+P1V attempt 8 (2026-09-05 07:10 CST, audit-round probe): pool EMPTY (list null); local keychain userId 3758 —
+probe task TASK_20260905_034 run-rejected, stuck draft status "0" with zero logs (same signature as 170/032/033).
+Task deleted. External funding block persists; recovery path unchanged (review §13 single task).
