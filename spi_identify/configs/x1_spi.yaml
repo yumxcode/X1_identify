@@ -144,6 +144,19 @@ motor_groups:                     # tanh saturation kappa per joint group
 kappa_s_nominal: 0.55
 kappa_s_range: [0.30, 0.80]
 
+# 回放保真度（P1，评审 §12.2 主导误差源；默认 legacy 值保持与 T9 可比，
+# 下一轮辨识按诊断结论开启）：
+#   base_linvel_mode: zero|stance  （P0-2 实测对发散无改善，保留开关供复现）
+#   delay_ms: 8.0                   J4 实测串联关节 6-9 ms 执行延迟（回放取
+#                                  delay 前的指令；100Hz 日志分辨率 10ms）
+#   reset_every_rows: 20            P1-2 multiple shooting：每 20 行（0.2s，
+#                                  P0 实测有效窗口）重同步到实测状态，代价
+#                                  度量短程预测误差而非发散速率
+replay:
+  base_linvel_mode: "zero"
+  delay_ms: 0.0
+  reset_every_rows: 0
+
 cost:                             # paper Tab.3 (X1: no mocap -> pos/linvel = 0)
   base_pos: 0.0
   base_linvel: 0.0
@@ -155,6 +168,10 @@ cost:                             # paper Tab.3 (X1: no mocap -> pos/linvel = 0)
   qd: 0.1
   tau: 0.002
   reg_scale: 0.1
+  # P1-3 通道归一化：各通道除以 nominal 残差尺度后加权（R-1.1：绝对单位下
+  # accel 独占 90.2%）。下一轮辨识开启；validate 路径不受影响（阈值语义
+  # 在 validation 节）。
+  normalize_channels: false
 
 optimizer:
   n_trials: 200                   # 新数据 clip 少（~7 train），单 trial 更快；
@@ -199,10 +216,18 @@ validation:
   # 完成标准 5 的跨策略地板：三 seed 观测 13.940/13.894/14.105（带宽仅 0.21，
   # 跨策略残差稳定），max+0.3 -> 14.405（绝对上限 15 仍约束）。
   cross_accel_rms_floor: 14.405
-  # 完成标准 4（ACTUATOR）：kappa_s 必须落在阶跃数据 M1 回归证据带内
-  # （串联关节 alpha 范围 [0.34, 0.71]，step_m1_regression_all.json）。
-  # 独立于行走数据的交叉校验：防 kappas 吸收基座/接触等未建模误差。
+  # 完成标准 4（ACTUATOR）：kappa_s 必须落在阶跃数据 M1 回归证据带内。
+  # P2-1（评审 R-4，2026-09-04）：证据关节按回归质量 R²>=0.80 过滤后取带
+  # （旧行为=全部串联关节 [0.34,0.71]，其下沿由最差回归 R²=0.58 的 hip_yaw
+  # 单独撑起；过滤后带 [0.546,0.706]，三 seed κs 0.370-0.482 全部出带——
+  # 即旧带未能拦截 κs 吸收未建模误差。对已归档 T9 判定无追溯力）。
   actuator_kappa_s_band: [0.34, 0.71]
+  actuator_m1_min_r2: 0.80
+  # P1-4（评审 R-1a/§6）：ACCEL 门槛以恒定重力零模型为参照（validate 运行
+  # 时在同一 holdout 上现算零模型 RMS，train 桶实测 ~1.42 m/s²），废除非
+  # 物理的地板分支（旧地板 15.0 = 零模型的 10 倍，已无区分度）。对已归档
+  # T9 判定无追溯力。
+  accel_zero_model_ratio: 3.0
 
 active:                           # SPI-Active stage 2
   command_dims: [0, 1, 2]         # vx, vy, wz (X1 cmd_vel)

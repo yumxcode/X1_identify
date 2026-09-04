@@ -38,6 +38,41 @@ class TestLogCholesky(unittest.TestCase):
             d = np.diag(p["inertia"])
             self.assertTrue(np.all(d.sum() >= 2 * d - 1e-12))
 
+    def test_steiner_roundtrip_with_large_com_offset(self):
+        # R-7 fix: a body whose nominal COM sits far from the body origin
+        # (torso-like, |r| ~ 0.207 m) must round-trip exactly — the legacy
+        # origin/COM conflation failed here (pseudo-inertia not PD).
+        m = 9.08107
+        r = np.array([-0.000617851, 0.206789, -0.00114246])
+        I = np.array([[0.15447, -0.00586, 0.00037],
+                      [-0.00586, 0.06250, -0.00074],
+                      [0.00037, -0.00074, 0.11822]])
+        phi = physical_to_phi(m, r, I)
+        back = phi_to_physical(phi)
+        self.assertAlmostEqual(back["mass"], m, places=9)
+        np.testing.assert_allclose(back["com"], r, atol=1e-9)
+        np.testing.assert_allclose(back["inertia"], I, atol=1e-7)
+
+    def test_phi_feasible_guarantees_eigenvalue_triangle(self):
+        # R-7 exit conversion: any phi yields a COM inertia satisfying the
+        # eigenvalue triangle inequality lam1+lam2 >= lam3 (rigid body)
+        rng = np.random.default_rng(11)
+        for _ in range(50):
+            phi = rng.normal(scale=0.3, size=10)
+            lam = np.linalg.eigvalsh(phi_to_physical(phi)["inertia"])
+            self.assertGreaterEqual(lam[0] + lam[1], lam[2] - 1e-9)
+
+    def test_triangle_violation_detected_and_projected(self):
+        # R-3: near-degenerate thin-plate spectrum flagged; projection repairs
+        cfg = [{"name": "base", "mass_range": (3.0, 5.5), "com_range": (-0.06, 0.06),
+                "inertia_diag_range": (0.005, 0.38)}]
+        p = {"bodies": {"base": {"mass": M0, "com": COM0.copy(),
+                                 "inertia": np.diag([0.02, 0.05, 0.10])}}}
+        viol = physical_violations(p, cfg)
+        self.assertIn("inertia_triangle", viol["base"])
+        proj = project_to_physical_domain(p, cfg)
+        self.assertEqual(physical_violations(proj, cfg), {})
+
     def test_U_upper_triangular_positive_diag(self):
         rng = np.random.default_rng(1)
         U = phi_to_U(rng.normal(size=10) * 0.5)
@@ -145,10 +180,12 @@ class TestPhysicalRangePenalty(unittest.TestCase):
         self.assertIn("inertia_yz", viol["base"])
         self.assertAlmostEqual(viol["base"]["inertia_yz"], 0.052, places=3)
         self.assertGreater(physical_range_penalty(bad, cfg), 1e2)
-        # 无该配置键时不检查（向后兼容；矩阵特征值须在 diag 域内以隔离该效应）
+        # 无该配置键时不检查（向后兼容；矩阵须同时满足三角不等式——
+        # 2026-09-04 R-3/R-7 起显式检查：[[0.06,.04,0],[.04,.06,0],[0,0,0.05]]
+        # 特征值 {0.10, 0.02, 0.05} 违反 λ1+λ2≥λ3，属薄板极限，会被标记）
         odd = self._params(inertia=np.array([[0.06, 0.04, 0.0],
                                              [0.04, 0.06, 0.0],
-                                             [0.0, 0.0, 0.05]]))
+                                             [0.0, 0.0, 0.09]]))
         self.assertEqual(physical_violations(odd, [self._cfg_body()]), {})
         # 小非对角（<= 上界）不违规
         ok = self._params(inertia=np.array([[0.02, 0.01, 0.0],

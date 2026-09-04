@@ -37,6 +37,41 @@ from spi.rollout import MuJoCoRollouter  # noqa: E402
 from spi.validate import assess, split_clips  # noqa: E402
 
 
+def zero_model_accel_rms(clips, filter_win: int, g: float = 9.81) -> float:
+    """RMS of the constant-gravity zero model on the holdout clips (P1-4).
+
+    Zero model: predict a ≡ [0, 0, +g] in the BODY frame for every step
+    (same definition as review_diag.py R-1a). Same box filter as the accel
+    cost so the comparison is apples-to-apples.
+    """
+    from spi.cost import box_filter as _bf
+    se, n = 0.0, 0
+    for c in clips:
+        ra = c.get("ref_accel")
+        if ra is None:
+            continue
+        raf = _bf(ra, filter_win)
+        d2 = np.sum((raf - np.array([0.0, 0.0, g])) ** 2, axis=1)
+        ok = np.isfinite(raf).all(axis=1)
+        se += float(np.sum(d2[ok]))
+        n += int(ok.sum())
+    return float(np.sqrt(se / n)) if n else None
+
+
+def load_m1_evidence():
+    """{joint: (alpha, R2)} from the step-regression evidence (P2-1)."""
+    path = Path(__file__).resolve().parents[2] / "data/derived/step_m1_regression_all.json"
+    try:
+        d = json.loads(path.read_text())
+    except Exception:
+        return None
+    out = {}
+    for j, v in d.items():
+        if isinstance(v, dict) and "alpha" in v and "R2" in v:
+            out[j] = (float(v["alpha"]), float(v["R2"]))
+    return out or None
+
+
 def _parse_nd(s: str) -> np.ndarray:
     """Parse a numpy repr string like '[-0.06 -0.02 -0.001]' or the 3x3
     '[[a b c] [d e f] [g h i]]' (space-separated, array2string style)."""
@@ -108,8 +143,12 @@ def main() -> None:
     params = coerce_params(payload["best_params"])
 
     mjcf = (ROOT / cfg["model"]["mjcf"]).resolve()
+    rcfg = cfg.get("replay", {})
     rollouter = MuJoCoRollouter(mjcf, base_body=cfg["model"]["base_body"],
-                                foot_bodies=tuple(cfg["model"]["foot_bodies"]))
+                                foot_bodies=tuple(cfg["model"]["foot_bodies"]),
+                                base_linvel_mode=rcfg.get("base_linvel_mode", "zero"),
+                                delay_ms=float(rcfg.get("delay_ms", 0.0)),
+                                reset_every_n=int(rcfg.get("reset_every_rows", 0)))
     kmap = kappa_map_from_cfg(cfg)
     space_cfg_body_name = cfg["bodies"][0]["name"]
     weights = CostWeights.from_dict(cfg["cost"])
@@ -144,9 +183,14 @@ def main() -> None:
         n_cross_steps = sum(c["n"] for c in cross_clips)
 
     n_val_steps = sum(c["n"] for c in val_clips)
+    zrms = zero_model_accel_rms(val_clips, weights.accel_filter_win) \
+        if weights.base_accel > 0 else None
+    if zrms is not None:
+        print(f"[validate] holdout zero-model accel RMS (a==[0,0,g]): {zrms:.3f} m/s^2")
     report = assess(cfg, params, nominal, train_costs, val_costs,
                     n_val_steps, accel_weight=weights.base_accel,
-                    cross_costs=cross_costs, n_cross_steps=n_cross_steps)
+                    cross_costs=cross_costs, n_cross_steps=n_cross_steps,
+                    zero_model_rms=zrms, m1_evidence=load_m1_evidence())
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

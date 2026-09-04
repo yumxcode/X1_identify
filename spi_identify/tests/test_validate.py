@@ -285,6 +285,57 @@ class TestCrossDataset(unittest.TestCase):
         cross = next(c for c in r["checks"] if c["id"] == "CROSS-DATASET")
         self.assertTrue(cross["ok"])
 
+    def test_accel_zero_model_bar(self):
+        # P1-4: zero-model-referenced absolute bar replaces the degenerated
+        # 15.0 floor when zero_model_rms is supplied (review R-1a: 1.42).
+        cfg = dict(CFG, validation={"accel_zero_model_ratio": 3.0,
+                                    "accel_rms_floor": 15.0})
+        good = mk_params()
+        vn = dict(SIG, quat=200.0, q=50.0, accel=1.0 * 1000 * 3 * 3)
+        vb = dict(SIG, quat=40.0, q=10.0)          # no accel term
+        r = assess(cfg, good, NOMINAL,
+                   {"nominal": dict(SIG), "best": dict(SIG)},
+                   {"nominal": vn, "best": vb}, 1000, accel_weight=1.0,
+                   zero_model_rms=1.42)
+        acc = next(c for c in r["checks"] if c["id"] == "ACCEL")
+        self.assertTrue(acc["ok"])   # bar=min(15, 3*1.42=4.26); best 0 passes
+        self.assertIn("zero-model 1.420 x 3.0", acc["detail"])
+        # rms 10 < old floor 15 but > 4.26 -> FAIL under the new bar
+        vb_bad = dict(SIG, quat=40.0, q=10.0, accel=1.0 * 1000 * 10.0 ** 2)
+        r2 = assess(cfg, good, NOMINAL,
+                    {"nominal": dict(SIG), "best": dict(SIG)},
+                    {"nominal": vn, "best": vb_bad}, 1000, accel_weight=1.0,
+                    zero_model_rms=1.42)
+        acc2 = next(c for c in r2["checks"] if c["id"] == "ACCEL")
+        self.assertFalse(acc2["ok"])
+
+    def test_actuator_band_r2_filtered(self):
+        # P2-1 (review R-4): filtering M1 evidence by regression quality
+        # drops hip_yaw (alpha .339, R2 .58) and tightens the band.
+        m1 = {"left_hip_pitch_joint": (0.633, 0.888),
+              "left_hip_roll_joint": (0.706, 0.892),
+              "left_hip_yaw_joint": (0.339, 0.579),
+              "left_knee_pitch_joint": (0.546, 0.845)}
+        cfg = dict(CFG, validation={"actuator_m1_min_r2": 0.80})
+        p = mk_params()
+        p["kappa_s"] = 0.55
+        vn = dict(SIG, quat=200.0, q=50.0)
+        vb = dict(SIG, quat=40.0, q=10.0, accel=1.0 * 1000 * 3 * 0.2 ** 2)
+        r = assess(cfg, p, NOMINAL, {"nominal": dict(SIG), "best": dict(SIG)},
+                   {"nominal": vn, "best": vb}, 1000, accel_weight=1.0,
+                   m1_evidence=m1)
+        act = next(c for c in r["checks"] if c["id"] == "ACTUATOR")
+        self.assertTrue(act["ok"])               # 0.55 in [0.546, 0.706]
+        self.assertIn("0.546", act["detail"])
+        self.assertIn("R2>=0.80", act["detail"])
+        p2 = mk_params()
+        p2["kappa_s"] = 0.40                     # only hip_yaw would excuse
+        r2 = assess(cfg, p2, NOMINAL, {"nominal": dict(SIG), "best": dict(SIG)},
+                    {"nominal": vn, "best": vb}, 1000, accel_weight=1.0,
+                    m1_evidence=m1)
+        act2 = next(c for c in r2["checks"] if c["id"] == "ACTUATOR")
+        self.assertFalse(act2["ok"])
+
     def test_cross_floor_configurable_separately(self):
         # cross_accel_rms_floor 独立配置：cross 观测 14.476 在 holdout 地板
         # 12.7 下 FAIL，在 cross 专属地板 14.8 下 PASS（R8 再基线场景）

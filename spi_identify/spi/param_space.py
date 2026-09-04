@@ -61,10 +61,18 @@ def phi_to_U(phi: np.ndarray) -> np.ndarray:
 
 
 def phi_to_physical(phi: np.ndarray) -> Dict[str, np.ndarray]:
-    """phi (R^10) -> {mass: float, com: (3,), inertia: (3,3) full matrix}.
+    """phi (R^10) -> {mass, com, inertia about the COM in body frame}.
 
-    m = J[3,3];  h = J[:3,3] = m*r;  Sigma = J[:3,:3];
-    I = tr(Sigma) * Identity(3) - Sigma   (pseudo-inertia inverse relations).
+    R-7 convention fix (2026-09-04 review §7.2): the pseudo-inertia
+    references the BODY ORIGIN, so I_o = tr(Sigma)·I3 − Sigma is the
+    origin-referenced inertia; MuJoCo body_inertia — and this whole pipeline
+    (config nominals, rollout, violations) — speaks the COM inertia. We
+    convert at the exit (parallel axis): I_com = I_o − m((r·r)I3 − r rᵀ).
+    Legacy behaviour returned I_o mislabelled as COM; nominal round-trips
+    stayed self-consistent so nothing already shipped changes numerically
+    (validate reads params from JSON, not through phi). The fix matters for
+    CMA-ES candidates: their feasibility guarantee now matches the real
+    rigid-body condition instead of the stricter Σ_c − m r rᵀ ≻ 0.
     """
     U = phi_to_U(phi)
     J = U @ U.T
@@ -74,12 +82,18 @@ def phi_to_physical(phi: np.ndarray) -> Dict[str, np.ndarray]:
     h = J[:3, 3]
     r = h / m
     Sigma = J[:3, :3]
-    I = np.trace(Sigma) * np.eye(3) - Sigma
+    I_o = np.trace(Sigma) * np.eye(3) - Sigma          # about body origin
+    r2 = float(r @ r)
+    I = I_o - m * (r2 * np.eye(3) - np.outer(r, r))    # -> about COM
     return {"mass": m, "com": r, "inertia": I}
 
 
 def physical_to_phi(mass: float, com: Sequence[float], inertia: Sequence[Sequence[float]]) -> np.ndarray:
-    """(m, r, I_full) -> phi. Used to anchor the nominal value and search box.
+    """(m, r, I_com_full) -> phi. Used to anchor the nominal value and search box.
+
+    Input inertia is the COM-referenced body-frame inertia (the same
+    convention phi_to_physical returns); it is shifted to the body origin
+    before building the pseudo-inertia (inverse of the R-7 exit conversion).
 
     Sigma = 0.5 tr(I) I3 - I; h = m r; J = [[Sigma, h],[h^T, m]]; phi from the
     *upper-triangular* Cholesky factor U with J = U U^T (paper Eq.2 form).
@@ -92,8 +106,10 @@ def physical_to_phi(mass: float, com: Sequence[float], inertia: Sequence[Sequenc
         raise ValueError("inertia must be 3x3")
     if not np.allclose(I, I.T, atol=1e-9):
         I = 0.5 * (I + I.T)  # symmetrize
-    Sigma = 0.5 * np.trace(I) * np.eye(3) - I
-    h = float(mass) * np.asarray(com, dtype=float)
+    r = np.asarray(com, dtype=float)
+    I_o = I + float(mass) * (float(r @ r) * np.eye(3) - np.outer(r, r))  # COM -> origin
+    Sigma = 0.5 * np.trace(I_o) * np.eye(3) - I_o
+    h = float(mass) * r
     J = np.zeros((4, 4))
     J[:3, :3] = Sigma
     J[:3, 3] = h
@@ -296,6 +312,12 @@ def physical_violations(params: Dict, bodies_cfg: Sequence[Dict]) -> Dict[str, D
             for v, nm in zip(od, ["inertia_xy", "inertia_xz", "inertia_yz"]):
                 if abs(v) > od_max:
                     viol[nm] = abs(v) - od_max
+        # Triangle inequality on eigenvalues (review R-3: log-Cholesky's
+        # constructive guarantee was weakened by the R-7 reference-point
+        # mismatch; check it explicitly — R9's margin was only 3.9%).
+        tri_margin = float(np.min(lam[0] + lam[1] - lam[2]))
+        if tri_margin < -1e-12:   # exact-equality (repaired spectrum) passes
+            viol["inertia_triangle"] = -tri_margin
         if viol:
             out[b["name"]] = viol
     return out
@@ -332,6 +354,11 @@ def project_to_physical_domain(params: Dict, bodies_cfg: Sequence[Dict]) -> Dict
         i_lo, i_hi = b["inertia_diag_range"]
         lam, V = np.linalg.eigh(I)
         lam = np.clip(lam, i_lo, i_hi)
+        # triangle inequality repair (review R-3/R-7): eigvalue clipping alone
+        # can leave lam[0]+lam[1] < lam[2]; cap the largest so the spectrum is
+        # realizable by a rigid body (R9's margin was only 3.9%).
+        if lam[0] + lam[1] < lam[2]:
+            lam[2] = max(i_lo, min(i_hi, lam[0] + lam[1]))
         I = V @ np.diag(lam) @ V.T
         I = 0.5 * (I + I.T)
         out["bodies"][b["name"]] = {"mass": mass, "com": com, "inertia": I}

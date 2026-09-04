@@ -1,0 +1,41 @@
+{
+ "status": "OFFICIAL INTERVAL VIEW (P2-2, review R-2/R-3) — supersedes point-estimate reading of r9_indomain_params.json for downstream use",
+ "identifiable_quantity": {
+  "kappa_s_over_m": {
+   "unit": "1/kg",
+   "interval_3seed": [
+    0.113,
+    0.117
+   ],
+   "mean": 0.115,
+   "spread_pct": 3.7,
+   "note": "the ONLY well-constrained combination (specific-force channel constrains tau/m ~ kappa_s/m); report this, not m or kappa_s alone"
+  }
+ },
+ "point_estimates_3seed": {
+  "pelvis_mass_kg": [
+   3.152,
+   3.619,
+   4.205
+  ],
+  "kappa_s": [
+   0.37,
+   0.409,
+   0.482
+  ],
+  "spread_pct": {
+   "pelvis_mass": 28.8,
+   "kappa_s": 26.7,
+   "ratio": 3.7
+  },
+  "verdict": "m and kappa_s individually NOT identifiable from this data (structural degeneracy)"
+ },
+ "inertia": {
+  "verdict": "NOT identifiable (no-mocap weak observability; all seeds inflate 3-9x vs nominal = error-absorption signature, review R-3)",
+  "recommendation": "keep NOMINAL inertia in downstream URDF/MJCF/DR; do not use R9 inertia"
+ },
+ "pelvis_mass": {
+  "verdict": "LOW credibility as a point estimate (seed2 4.205 ~ nominal -2.3% beats R9 3.152 on both metrics); DR should span 3.15-4.21 kg (+-15%) centred on nominal 4.30, not +-5% around R9"
+ },
+ "provenance": "seeds: TASK_20260903_015 (R9), TASK_20260904_013/014; see docs/rounds/2026-09-04_sysid_review.md §3/§4 and 2026-09-03 report §2.5"
+}

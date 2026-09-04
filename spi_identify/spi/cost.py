@@ -43,6 +43,13 @@ class CostWeights:
     tau: float = 0.01 * 0.2
     # regularization scale applied to ParamSpace.regularization()
     reg_scale: float = 0.1
+    # P1-3 channel normalization (review §6/R-1.1: accel alone was 90.2% of
+    # the total because channels add in raw units). When True, evaluate()
+    # divides each channel's squared error by the NOMINAL-parameter residual
+    # RMS of that channel (supplied per call via norm_scales — computed once
+    # by the driver from a nominal rollout), making every channel contribute
+    # its relative misprediction. Default False = legacy absolute units.
+    normalize_channels: bool = False
 
     @staticmethod
     def from_dict(d: Optional[Dict[str, float]]) -> "CostWeights":
@@ -104,36 +111,44 @@ class PredictionCost:
         """sim/ref: dicts with quat (n,4), gyro (n,3), accel (n,3), q (n,29),
         qd (n,29), tau (n,29). NaN reference entries are excluded per-term."""
         w = self.weights
+        # optional per-channel normalization: values are nominal-RMS² scalars
+        ns = getattr(self, "norm_scales", None) or {}
         c = 0.0
         n = sim["quat"].shape[0]
         if w.base_quat > 0:
-            c += w.base_quat * np.sum(quat_err(sim["quat"], ref["quat"]))
+            c += w.base_quat * np.sum(quat_err(sim["quat"], ref["quat"])) / ns.get("quat", 1.0)
         if w.base_angvel > 0 and ref.get("gyro") is not None:
             d2 = np.sum((sim["gyro"] - ref["gyro"]) ** 2, axis=1)
-            c += w.base_angvel * np.sum(np.nan_to_num(d2))
+            c += w.base_angvel * np.sum(np.nan_to_num(d2)) / ns.get("angvel", 1.0)
         if w.base_accel > 0 and ref.get("accel") is not None:
             sim_a = box_filter(sim["accel"], w.accel_filter_win)
             ref_a = box_filter(ref["accel"], w.accel_filter_win)
             d2 = np.sum((sim_a - ref_a) ** 2, axis=1)
             ok = np.isfinite(ref_a).all(axis=1) & np.isfinite(sim_a).all(axis=1)
-            c += w.base_accel * float(np.sum(d2[ok]))
+            c += w.base_accel * float(np.sum(d2[ok])) / ns.get("accel", 1.0)
         mask = self.joint_mask
         if mask is None:
             mask = np.ones(sim["q"].shape[1], dtype=bool)
         if w.q > 0:
             d2 = np.sum((sim["q"][:, mask] - ref["q"][:, mask]) ** 2, axis=1)
             d2 = np.where(np.isfinite(ref["q"][:, mask]).all(axis=1), d2, 0.0)
-            c += w.q * np.sum(d2)
+            c += w.q * np.sum(d2) / ns.get("q", 1.0)
         if w.qd > 0:
             d2 = np.sum((sim["qd"][:, mask] - ref["qd"][:, mask]) ** 2, axis=1)
             d2 = np.where(np.isfinite(ref["qd"][:, mask]).all(axis=1), d2, 0.0)
-            c += w.qd * np.sum(d2)
+            c += w.qd * np.sum(d2) / ns.get("qd", 1.0)
         if w.tau > 0 and ref.get("tau") is not None:
             err2 = (sim["tau"] - ref["tau"]) ** 2
             ok = np.isfinite(ref["tau"]) & np.isfinite(sim["tau"])
-            c += w.tau * float(np.sum(err2[ok]))
+            c += w.tau * float(np.sum(err2[ok])) / ns.get("tau", 1.0)
         del n
         return clip_cost(np.asarray(c))
+
+    def set_norm_scales(self, scales: Dict[str, float]) -> None:
+        """Attach nominal residual RMS² per channel (P1-3). The driver
+        computes these from a nominal-parameter rollout so each channel's
+        contribution becomes relative misprediction."""
+        self.norm_scales = {k: max(float(v), 1e-12) for k, v in scales.items()}
 
 
 def total_cost(cost_fn: PredictionCost, clips: List[Dict], sims: List[Dict],

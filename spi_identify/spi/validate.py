@@ -15,6 +15,11 @@ Completion criteria (see also configs/x1_spi.yaml -> validation):
                     （评审点：辨识必须利用 IMU 三轴加速度；地板由 v12/v13
                     两个独立数据集实测的辨识后残差 ~12.5-12.9 预登记为 13.0，
                     即无动捕开环回放的可达下界，上限 15 保持绝对严格）。
+                    P1-4（2026-09-04 评审 §6/R-1a）：当提供 zero_model_rms
+                    （恒定重力零模型在同一 holdout 上的残差）时，改判
+                    best <= zero_model_ratio × rms_zero —— 有物理参照的绝对
+                    精度检验（旧地板 15.0 = 零模型 train 桶 1.42 的 10 倍，
+                    已无区分度，评审判其退化）。
   4. ACTUATOR       kappa_s 落在阶跃数据 M1 回归证据带内（串联关节有效刚度
                     缩放 alpha，独立于行走数据的交叉校验；防 kappa_s 吸收
                     基座/接触等未建模误差）。带由 validation.actuator_kappa_s_band
@@ -125,7 +130,9 @@ def assess(cfg: Dict, params: Dict, nominal: Dict,
            train_costs: Dict[str, Dict[str, float]], val_costs: Dict[str, Dict[str, float]],
            n_val_steps: int, accel_weight: float = 1.0,
            cross_costs: Optional[Dict[str, Dict[str, float]]] = None,
-           n_cross_steps: int = 0) -> Dict:
+           n_cross_steps: int = 0,
+           zero_model_rms: Optional[float] = None,
+           m1_evidence: Optional[Dict[str, tuple]] = None) -> Dict:
     """Evaluate the completion criteria.
 
     train_costs/val_costs: {"nominal": per_signal_cost dict, "best": per_signal_cost dict}
@@ -174,39 +181,68 @@ def assess(cfg: Dict, params: Dict, nominal: Dict,
     rms_floor = float(vcfg.get("accel_rms_floor", ACCEL_RMS_FLOOR))
     rms_best = accel_rms(val_costs["best"], accel_weight, n_val_steps)
     rms_nom = accel_rms(val_costs["nominal"], accel_weight, n_val_steps)
+    # P1-4: zero-model-referenced bar (absolute accuracy); falls back to the
+    # legacy floor/max bar when the zero-model RMS is not supplied.
+    zero_ratio = vcfg.get("accel_zero_model_ratio")
     if accel_weight <= 0 or rms_best is None:
         pass  # accel term disabled -> check skipped
     else:
-        improve_ratio = float(vcfg.get("accel_improve_ratio", ACCEL_IMPROVE_RATIO))
-        rms_floor = float(vcfg.get("accel_rms_floor", ACCEL_RMS_FLOOR))
-        if rms_nom is None or rms_nom < 0.01:
-            bar = accel_max  # nominal has no accel error -> relative branch waived
+        if zero_ratio is not None and zero_model_rms is not None:
+            bar = min(accel_max, float(zero_ratio) * float(zero_model_rms))
+            branch = f"zero-model {float(zero_model_rms):.3f} x {zero_ratio}"
+            ok3 = bool(rms_best <= bar)
+            checks.append({
+                "id": "ACCEL",
+                "ok": ok3,
+                "detail": (f"val accel RMS best={round(rms_best, 3)} "
+                           f"(bar={round(bar, 3)} = {branch}; "
+                           f"nominal={None if rms_nom is None else round(rms_nom, 3)})"),
+            })
         else:
-            bar = min(accel_max, max(rms_floor, improve_ratio * rms_nom))
-        ok3 = bool(rms_best <= bar)
-        rel_bar = (improve_ratio * rms_nom
-                   if rms_nom is not None and rms_nom >= 0.01 else None)
-        checks.append({
-            "id": "ACCEL",
-            "ok": ok3,
-            "detail": (f"val accel RMS: best={round(rms_best, 3)} "
-                       f"nominal={None if rms_nom is None else round(rms_nom, 3)} m/s^2 "
-                       f"(bar=min({accel_max}, max({rms_floor}, "
-                       f"{None if rel_bar is None else round(rel_bar, 3)}))={round(bar, 3)}; "
-                       f"floor branch={'n/a' if rel_bar is None else ('yes' if rms_floor > rel_bar else 'no')})"),
-        })
+            improve_ratio = float(vcfg.get("accel_improve_ratio", ACCEL_IMPROVE_RATIO))
+            rms_floor = float(vcfg.get("accel_rms_floor", ACCEL_RMS_FLOOR))
+            if rms_nom is None or rms_nom < 0.01:
+                bar = accel_max  # nominal has no accel error -> relative branch waived
+            else:
+                bar = min(accel_max, max(rms_floor, improve_ratio * rms_nom))
+            ok3 = bool(rms_best <= bar)
+            rel_bar = (improve_ratio * rms_nom
+                       if rms_nom is not None and rms_nom >= 0.01 else None)
+            checks.append({
+                "id": "ACCEL",
+                "ok": ok3,
+                "detail": (f"val accel RMS: best={round(rms_best, 3)} "
+                           f"nominal={None if rms_nom is None else round(rms_nom, 3)} m/s^2 "
+                           f"(bar=min({accel_max}, max({rms_floor}, "
+                           f"{None if rel_bar is None else round(rel_bar, 3)}))={round(bar, 3)}; "
+                           f"floor branch={'n/a' if rel_bar is None else ('yes' if rms_floor > rel_bar else 'no')})"),
+            })
 
     # 4. actuator consistency: kappa_s inside the step-data regression band
     #    (independent evidence, independent of the walking trajectories)
     ks = float(params.get("kappa_s", 1.0))
-    ks_lo, ks_hi = vcfg.get("actuator_kappa_s_band", ACTUATOR_KAPPA_S_BAND)
+    # P2-1 (review R-4): the band's lower edge was carried by the WORST
+    # regression joint (hip_yaw R2=0.58, tau_p98 2.8 Nm = 1/10 of knee).
+    # actuator_m1_min_r2 (optional, default None) filters the M1 evidence
+    # joints by regression quality before taking the alpha range.
+    m1_min_r2 = vcfg.get("actuator_m1_min_r2")
+    if m1_min_r2 is not None and m1_evidence is not None:
+        kept = {j: a for j, (a, r2) in m1_evidence.items() if r2 >= float(m1_min_r2)}
+        if kept:
+            ks_lo, ks_hi = min(kept.values()), max(kept.values())
+        else:
+            ks_lo, ks_hi = vcfg.get("actuator_kappa_s_band", ACTUATOR_KAPPA_S_BAND)
+    else:
+        ks_lo, ks_hi = vcfg.get("actuator_kappa_s_band", ACTUATOR_KAPPA_S_BAND)
     ks_lo, ks_hi = float(ks_lo), float(ks_hi)
     ok4 = bool(ks_lo <= ks <= ks_hi)
+    band_src = (f"R2>={float(m1_min_r2):.2f} filtered"
+                if m1_min_r2 is not None and m1_evidence else "legacy full-joint")
     checks.append({
         "id": "ACTUATOR",
         "ok": ok4,
         "detail": (f"kappa_s={ks:.3f} vs step-regression band "
-                   f"[{ks_lo}, {ks_hi}] (serial alpha: knee .55 / hip .34-.71)"),
+                   f"[{ks_lo:.3f}, {ks_hi:.3f}] ({band_src})"),
     })
 
     # 5. cross-policy-dataset generalization (gating when cross data provided)

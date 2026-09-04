@@ -60,8 +60,12 @@ def main() -> None:
           f"train {len(train_clips)} / val {len(val_clips)}")
 
     mjcf = (ROOT / cfg["model"]["mjcf"]).resolve()
+    rcfg = cfg.get("replay", {})
     rollouter = MuJoCoRollouter(mjcf, base_body=cfg["model"]["base_body"],
-                                foot_bodies=tuple(cfg["model"]["foot_bodies"]))
+                                foot_bodies=tuple(cfg["model"]["foot_bodies"]),
+                                base_linvel_mode=rcfg.get("base_linvel_mode", "zero"),
+                                delay_ms=float(rcfg.get("delay_ms", 0.0)),
+                                reset_every_n=int(rcfg.get("reset_every_rows", 0)))
     kmap = kappa_map_from_cfg(cfg)
     space_cfg_body_name = cfg["bodies"][0]["name"]
     weights = CostWeights.from_dict(cfg["cost"])
@@ -69,6 +73,31 @@ def main() -> None:
     for j in LEG_JOINTS:
         joint_mask[JIDX[j]] = True
     cost_fn = PredictionCost(weights=weights, joint_mask=joint_mask)
+
+    # P1-3 channel normalization: one nominal rollout fixes each channel's
+    # residual scale; every candidate is then scored in relative units
+    # (review R-1.1: accel alone was 90.2% of the absolute-unit total).
+    if weights.normalize_channels:
+        from spi.cost import per_signal_cost
+        def _channel_scales(params, clips_):
+            bodies = dict(params["bodies"])
+            if rollouter._base_name not in bodies:
+                bodies[rollouter._base_name] = bodies[space_cfg_body_name]
+            p = {"bodies": bodies, "motors": params["motors"],
+                 "kappa_s": params["kappa_s"]}
+            tot = {}
+            for c, sim in zip(clips_, rollouter.rollout_clips(clips_, p, kmap)):
+                for k, v in per_signal_cost(cost_fn, sim, {
+                        "quat": c["ref_quat"], "gyro": c["ref_gyro"],
+                        "accel": c.get("ref_accel"), "q": c["ref_q"],
+                        "qd": c["ref_qd"], "tau": c["ref_tau"]}).items():
+                    tot[k] = tot.get(k, 0.0) + v
+            return tot
+        space0 = build_space(cfg)
+        raw = _channel_scales(space0.nominal_params(), train_clips)
+        cost_fn.set_norm_scales(raw)
+        print(f"[spi] channel norm scales (nominal residual sums): "
+              f"{ {k: round(v, 1) for k, v in raw.items()} }")
 
     def evaluate(params: dict, clips_=None) -> float:
         # rollout looks up params["bodies"]["base"]; config key may differ

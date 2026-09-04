@@ -101,7 +101,9 @@ class MuJoCoRollouter:
     def __init__(self, mjcf_path: str | Path, base_body: str = "link_base",
                  foot_bodies: Tuple[str, ...] = ("link_left_ankle_roll", "link_right_ankle_roll"),
                  gyro_in_body_frame: bool = True,
-                 base_linvel_mode: str = "zero"):
+                 base_linvel_mode: str = "zero",
+                 delay_ms: float = 0.0,
+                 reset_every_n: int = 0):
         import mujoco  # lazy
 
         self._mj = mujoco
@@ -121,6 +123,17 @@ class MuJoCoRollouter:
             raise ValueError("base_linvel_mode must be 'zero' or 'stance', "
                              f"got {base_linvel_mode!r}")
         self.base_linvel_mode = base_linvel_mode
+        # P1-1 replay fidelity: measured 6-9 ms actuation delay (J4,
+        # joint_identify) — commands are replayed from `delay_ms` ago
+        # (0 = legacy instant replay).
+        self.delay_rows = max(0, int(round(float(delay_ms) * 1e-3 / 0.01)))
+        # P1-2 multiple shooting: every reset_every_n data rows the sim
+        # state is re-synced to the MEASURED trajectory (joints + base
+        # attitude/angular rate; base position stays integrated —
+        # unobservable). 0 = legacy single-shot open loop. Review §10:
+        # the cost then measures short-horizon prediction error instead
+        # of divergence rate.
+        self.reset_every_n = int(reset_every_n)
 
         # joint address maps for the 29 logged joints
         self.j_qpos_adr, self.j_dof_adr, self.j_ctrl_adr = [], [], []
@@ -243,20 +256,47 @@ class MuJoCoRollouter:
                        qvel: np.ndarray, kappa_j: np.ndarray,
                        kappa_s: float) -> np.ndarray:
         """tau for the 29 joints with the tanh actuator model."""
+        src = max(0, row - self.delay_rows)   # P1-1: delayed command replay
         tau = np.zeros(29)
         for i in range(29):
-            mode = clip["mode"][row, i]
+            mode = clip["mode"][src, i]
             kappa = kappa_j[i]
             if mode == MODE_POS:
-                tau_pd = clip["kp"][i] * (clip["ctrl_target_pos"][row, i] - qpos[self.j_qpos_adr[i]]) \
+                tau_pd = clip["kp"][i] * (clip["ctrl_target_pos"][src, i] - qpos[self.j_qpos_adr[i]]) \
                     - clip["kd"][i] * qvel[self.j_dof_adr[i]]
             elif mode == MODE_TAU:
-                tau_pd = clip["ctrl_target_tau"][row, i]
+                tau_pd = clip["ctrl_target_tau"][src, i]
             else:  # hold at nominal (shoulder/wrist/lumbar)
-                tau_pd = clip["kp"][i] * (clip["ctrl_target_pos"][row, i] - qpos[self.j_qpos_adr[i]]) \
+                tau_pd = clip["kp"][i] * (clip["ctrl_target_pos"][src, i] - qpos[self.j_qpos_adr[i]]) \
                     - clip["kd"][i] * qvel[self.j_dof_adr[i]]
             tau[i] = tanh_motor_torque(tau_pd, kappa, kappa_s)
         return tau
+
+    def _resync_to_measured(self, clip: Dict, row: int) -> None:
+        """P1-2: re-anchor sim state to the measured trajectory at `row`:
+        joint q/qd, base quaternion (from IMU), base angular rate (gyro).
+        Base xyz position is left integrated (not observable without mocap)
+        but its height is re-solved so the lowest foot rests on the ground.
+        """
+        mj = self._mj
+        fq, fd = self.free_qposadr, self.free_dofadr
+        self.data.qpos[fq + 3:fq + 7] = clip["ref_quat"][row]
+        for i, adr in enumerate(self.j_qpos_adr):
+            if adr is not None:
+                self.data.qpos[adr] = clip["ref_q"][row, i]
+        # base height: keep current xy, solve z so the lowest foot touches 0
+        z0 = self.data.qpos[fq + 2]
+        mj.mj_kinematics(self.model, self.data)
+        z_min = min(self.data.xpos[bid][2] for bid in self.foot_bids if bid >= 0)
+        self.data.qpos[fq + 2] = z0 - z_min
+        for i, adr in enumerate(self.j_dof_adr):
+            if adr is not None:
+                self.data.qvel[adr] = clip["ref_qd"][row, i]
+        self.data.qvel[fd + 3:fd + 6] = clip["ref_gyro"][row]
+        if self.base_linvel_mode == "stance":
+            v = self._stance_base_linvel(self.data.qpos.copy(), self.data.qvel.copy())
+            self.data.qvel[fd:fd + 3] = v
+        mj.mj_forward(self.model, self.data)
 
     def rollout_clip(self, clip: Dict, params: Dict,
                      kappa_map: Dict[str, List[int]]) -> Dict[str, np.ndarray]:
@@ -283,6 +323,8 @@ class MuJoCoRollouter:
         g_world = np.asarray(self.model.opt.gravity, dtype=float)
 
         for row in range(n):
+            if self.reset_every_n > 0 and row > 0 and row % self.reset_every_n == 0:
+                self._resync_to_measured(clip, row)
             tau = self._motor_torques(clip, row, self.data.qpos, self.data.qvel,
                                       kappa_j, kappa_s)
             ctrl = np.zeros(self.nu)

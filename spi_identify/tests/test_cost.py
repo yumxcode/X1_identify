@@ -43,6 +43,27 @@ class TestPredictionCost(unittest.TestCase):
         # tau mask: all finite here
         self.assertAlmostEqual(c.evaluate(sim, ref), 0.0, places=9)
 
+    def test_channel_normalization(self):
+        # P1-3: with norm_scales attached, each channel divides by its
+        # nominal residual scale — the accel channel (absolute units dominate
+        # at 90.2% today) stops drowning the q channel.
+        w = CostWeights(base_accel=1.0, q=3.0, accel_filter_win=1)
+        cf = PredictionCost(weights=w)
+        n = 100
+        sim = {"quat": np.tile([1.0, 0, 0, 0], (n, 1)), "gyro": np.zeros((n, 3)),
+               "accel": np.zeros((n, 3)), "q": np.zeros((n, 29)),
+               "qd": np.zeros((n, 29)), "tau": np.zeros((n, 29))}
+        ref = {"quat": sim["quat"].copy(), "gyro": sim["gyro"].copy(),
+               "accel": np.full((n, 3), 2.0),     # accel err 2 m/s^2
+               "q": np.full((n, 29), 0.1),        # q err 0.1 rad/joint
+               "qd": sim["qd"].copy(), "tau": sim["tau"].copy()}
+        raw = cf.evaluate(sim, ref)
+        self.assertGreater(raw, 100 * 3 * 4.0 + 3 * 100 * 29 * 0.01 - 5.0)
+        cf.set_norm_scales({"accel": 4.0, "q": 0.01})
+        norm = cf.evaluate(sim, ref)
+        # accel 1200/4=300 ; q 87/0.01=8700 -> q dominates, total 9000
+        self.assertAlmostEqual(norm, 9000.0, delta=1e-6)
+
     def test_positive_when_different(self):
         ref = make_ref()
         sim = {k: v.copy() for k, v in ref.items()}
