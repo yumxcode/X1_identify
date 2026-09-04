@@ -1,0 +1,8 @@
+P1V attempt 5 (2026-09-05): local keychain account (userId 3758, mehod79417) — gm task run rejected.
+Task TASK_20260904_170 stayed in draft status "0" (never scheduled; zero log output), run calls returned
+"任务启动失败" / "任务正在启动中" code 1002030-family errors consistent with insufficient run balance.
+Task deleted after probing. Account-pool simultaneously EMPTY (account-pool list -> "（号池为空）", get -> null).
+Total exhausted paths: pool 42 (acct-empty), 43 (mid-run kill of 145), 44 (acct-empty at run),
+local keychain 3758 (run rejected). Recovery: replenish pool or fund any account, then single task per
+review §13 closure command:
+  gm-run X1_identify/spi_identify/scripts/remote_sysid.py --validate-only --params-file=spi_identify/results/r9_indomain_params.json
