@@ -386,3 +386,16 @@ box_filter(20) 退化为整段平均，绝对值部分受边缘效应影响，�
    （12.2 的候选清单），否则短窗代价仍由回放误差主导；
 3. `parked/two-body-preP0` 分支维持 parked：在回放保真度修复前，任何参数空间扩展
    （含二刚体）都无法在发散轨迹上产生有效辨识。
+
+---
+
+## 13. P1/P2 修复落码与证据状态（2026-09-04 追加）
+
+§8 清单中 P1 全部四项 + P2 全部三项 + R-7 定义修复已落码（commit 43d9fce，80+24 单测；
+关键逻辑均有单测机械验证：零模型 bar 数学、R² 过滤带、通道归一化、Steiner 往返、
+三角不等式）。**远端 validate-only 重跑证据因账号池运行余额耗尽（42/43/44 三账号，
+4 次尝试：127 pypi 超时 / 142·144·155 无余额 / 145 中途被终止）暂缺，标记 PENDING**；
+预期 R9 在新门禁下 FAIL（ACCEL bar≈4.26 << 13.541；ACTUATOR 0.370 出过滤带），
+与本文 R-4/R-5 结论一致——待资源恢复后 `gm-run remote_sysid.py --validate-only
+--params-file=spi_identify/results/r9_indomain_params.json` 一次任务即可闭环。
+config 新键默认 legacy，对已归档判定无追溯力。
