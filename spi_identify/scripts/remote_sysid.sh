@@ -45,7 +45,11 @@ if [ ! -f "$MJCF_PATH" ]; then
 fi
 
 # --- python deps (image ships torch; mujoco/optuna are pip-only) ----------
-python -m pip install -q --no-input mujoco optuna cmaes pyyaml matplotlib 2>&1 | tail -1 || true
+# --retries/--timeout: the platform's pip mirror occasionally read-times-out
+# (TASK_20260904_127 died to a single-shot timeout); the || true stays so a
+# pre-provisioned image still passes the import check below.
+python -m pip install -q --no-input --retries 5 --timeout 90 \
+  mujoco optuna cmaes pyyaml matplotlib 2>&1 | tail -1 || true
 python - <<'PY'
 import mujoco, optuna, cmaes, yaml, numpy
 print("deps OK:", "mujoco", mujoco.__version__, "| optuna", optuna.__version__,
