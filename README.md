@@ -10,7 +10,7 @@
 
 | 结论 | 状态 | 依据 |
 |---|---|---|
-| **SPI 多数据集辨识（现行基准 R9）**：骨盆 3.152 kg（域内）、κs 0.370、holdout eff 0.358 / 比力 13.541≤14.04、跨策略 ratio 0.307 / 比力 13.940≤14.24 —— **五项全 PASS** | ✅ **PASS** | T9 TASK_20260903_073 exit 0，`spi_identify/results/r9_indomain_params.json` |
+| **SPI 多数据集辨识（现行基准 R9）**：骨盆 3.152 kg（域内）、κs 0.370、holdout eff 0.358 / 比力 13.541、跨策略 ratio 0.307 / 比力 13.940 —— **五项全 PASS**（T9 exit 0；3-seed 复核全 PASS，地板 15.0/14.405 再基线，§2.5） | ✅ **PASS** | T9 TASK_20260903_073 + MS TASK_20260904_013/014，`spi_identify/results/r9_indomain_params.json` |
 | **SPI 单数据闭环（R4+R7）**：骨盆 3.428 kg、κs 0.396、四项全过；R4 参数跨策略 ratio 0.318 | ✅ PASS | TASK_20260902_034 / T1 复验 |
 | **F1 v15 交叉基准**：两环境互洽 | ✅ PASS | TASK_20260902_030 |
 | **关节模组辨识（joint_identify）**：延迟 6–9 ms（J4 PASS）、k_t R²=1.000（J5 PASS）；J1 knee R² 0.50 / J2 摩擦项不对称 / J3 hip_roll α 0.831 边际 FAIL（根因量化见报告 §3.2） | ⚠️ 部分 PASS | T9/T10（现 24 单测，T9 时点 19；12 文件语义守卫全过） |
@@ -98,7 +98,7 @@ data/raw/ 放入新数据（保持原始文件名）
 | 方法 | 脚本 | 状态 |
 |---|---|---|
 | SPI 采样式白盒辨识（CMA-ES + MuJoCo 开环回放，多数据集 train/cross 分桶） | `spi_identify/scripts/run_spi.py` | ✅ R9 域内辨识 + T9 终判五项全 PASS（exit 0） |
-| SPI 完成标准五项验证（含 CROSS-DATASET 跨策略） | `spi_identify/scripts/validate_spi.py` | ✅（地板 14.04/14.24 分层，仅域内证据计价） |
+| SPI 完成标准五项验证（含 CROSS-DATASET 跨策略） | `spi_identify/scripts/validate_spi.py` | ✅（地板 15.0/14.405，3-seed 再基线） |
 | 关节模组辨识（摩擦/惯量/延迟/增益/电流映射 + 语义守卫） | `joint_identify/scripts/run_joint_identify.py` | ⚠️ T9 终判：J4/J5 PASS，J1/J2/J3 边际 FAIL（根因量化，参数以参考值交付，见报告 §3.2/§7） |
 | 阶跃数据 M1 回归（κs 锚定） | `data/derived/step_m1_regression_all.json` | ✅ |
 | 质量-代价地形诊断 | `spi_identify/scripts/mass_landscape.py` | ✅ |

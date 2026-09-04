@@ -21,6 +21,7 @@
 | 2026-08-31 | PRIME 路线交付 | 辨识/证伪 | 无 mocap 适配 PRIME 复现：G1/G2 FAIL——**惯性参数在本传感配置下原理性不可辨识**（7 实验证据链）；G3/G4/G5 PASS（GRF 整机 37.355 kg，TASK_20260831_122） | [2026-08-31_prime/DELIVERY.md](2026-08-31_prime/DELIVERY.md)、[prime_identify/IDENTIFIABILITY.md](../../prime_identify/IDENTIFIABILITY.md) |
 | 2026-09-02 | SPI 集成 + 原生验证 | 辨识 | 仓库改造为专属辨识项目；SPI 流水线 vendor + R1–R7 原生任务：**原生辨识+原生验证闭环 PASS**（R4 参数：质量 3.428 kg、κs 0.396、holdout -68.7%；地板再基线 13.5→13.8） | [2026-09-02_spi_integration.md](2026-09-02_spi_integration.md) |
 | 2026-09-02/03 | 多数据集辨识轮（x1_data 新数据） | 辨识 | 10 条新 walk_diag（270 s，三策略组）入 train/cross 双桶；新增完成标准 5 CROSS-DATASET 与关节级 GATE-J1..J5；**SPI 五项全 PASS**（R9 域内参数：骨盆 3.152 kg、κs 0.370、cross 0.307/13.940≤14.24，T9 TASK_20260903_073 exit 0）；关节 J4/J5 PASS、J1/J2/J3 边际 FAIL（根因量化；post-hoc 修订 T10 改善 knee R² +0.04~0.05 未翻转判定）；GRF 质量 G6 v2 PASS（直行 35.94 kg） | [2026-09-03_multidataset_sysid_report.md](2026-09-03_multidataset_sysid_report.md) |
+| 2026-09-04 | 多 seed 地板标定 | 辨识/标定 | seed2/3 补跑（TASK_20260904_013/014，seed 传递验证生效）：3-seed 地板再基线 holdout 15.0（带宽 1.66 占满至绝对上限，单 seed 地板假 FAIL 实证）/ cross 14.405（带宽 0.21 稳定）；参数 seed 方差量化（骨盆 ±14%、κs 全带内）；R9 判定不变，官方参数维持 seed1（§2.5） | [2026-09-03_multidataset_sysid_report.md §2.5](2026-09-03_multidataset_sysid_report.md) |
 
 ## 当前有效基准（速查）
 
