@@ -77,10 +77,31 @@ def mat2quat_wxyz(R: np.ndarray) -> np.ndarray:
     return q / np.linalg.norm(q)
 
 
+STANCE_Z_TOL = 0.03  # m: both feet within this of the lowest -> double support
+
+
+def solve_stance_base_linvel(J_lin_base: np.ndarray, J_lin_joints: np.ndarray,
+                             qd: np.ndarray) -> np.ndarray:
+    """Base linear velocity from stance-foot kinematic odometry (pure numpy).
+
+    Stance foot/feet assumed at zero world velocity:
+        J_lin_base v_base + J_lin_joints qd = 0  ->  v_base = lstsq(-J_j qd)
+    Inputs: J_lin_base (3n,3), J_lin_joints (3n,nvj), qd (nvj,) joint rates.
+    Returns v_base (3,) world frame. P0-2 fix for the R-1 root cause
+    (base linear velocity was hard-zeroed while commands ran 0.4-1.0 m/s).
+    Unit-testable without mujoco.
+    """
+    A = np.asarray(J_lin_base, dtype=float)
+    B = -np.asarray(J_lin_joints, dtype=float) @ np.asarray(qd, dtype=float)
+    v, *_ = np.linalg.lstsq(A, B, rcond=None)
+    return v
+
+
 class MuJoCoRollouter:
     def __init__(self, mjcf_path: str | Path, base_body: str = "link_base",
                  foot_bodies: Tuple[str, ...] = ("link_left_ankle_roll", "link_right_ankle_roll"),
-                 gyro_in_body_frame: bool = True):
+                 gyro_in_body_frame: bool = True,
+                 base_linvel_mode: str = "zero"):
         import mujoco  # lazy
 
         self._mj = mujoco
@@ -92,6 +113,14 @@ class MuJoCoRollouter:
         self.foot_bids = [mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, f)
                           for f in foot_bodies]
         self.gyro_in_body_frame = gyro_in_body_frame
+        # base_linvel_mode: "zero" = legacy (hard-zero initial base linear
+        # velocity; R-1 root cause of within-clip divergence); "stance" =
+        # kinematic odometry from the stance foot (P0-2). Both modes are
+        # quantified side-by-side by scripts/clip_scan_diag.py.
+        if base_linvel_mode not in ("zero", "stance"):
+            raise ValueError("base_linvel_mode must be 'zero' or 'stance', "
+                             f"got {base_linvel_mode!r}")
+        self.base_linvel_mode = base_linvel_mode
 
         # joint address maps for the 29 logged joints
         self.j_qpos_adr, self.j_dof_adr, self.j_ctrl_adr = [], [], []
@@ -171,11 +200,44 @@ class MuJoCoRollouter:
         mj.mj_kinematics(self.model, self.data)
         z_min = min(self.data.xpos[bid][2] for bid in self.foot_bids if bid >= 0)
         qpos[self.free_qposadr + 2] -= z_min
-        # velocities: base linear unknown -> 0; angular from gyro (body frame)
+        # velocities: angular from gyro (body frame); joint rates from log
         qvel[self.free_dofadr + 3:self.free_dofadr + 6] = clip["gyro0"]
         for i, adr in enumerate(self.j_dof_adr):
             qvel[adr] = clip["qd0"][i]
+        # base linear velocity: legacy hard-zero, or stance kinematic odometry
+        # (P0-2): with joint rates and base pose now set, solve for the base
+        # velocity that makes the stance foot(ves) stationary in the world.
+        if self.base_linvel_mode == "stance":
+            qvel[self.free_dofadr:self.free_dofadr + 3] = \
+                self._stance_base_linvel(qpos, qvel)
         return qpos, qvel
+
+    def _stance_base_linvel(self, qpos: np.ndarray, qvel: np.ndarray) -> np.ndarray:
+        """v_base = -J_stance qd; stance = lowest foot (+ double support if
+        both feet within STANCE_Z_TOL of the lowest)."""
+        mj = self._mj
+        self.data.qpos[:] = qpos
+        self.data.qvel[:] = 0.0
+        mj.mj_kinematics(self.model, self.data)
+        mj.mj_comPos(self.model, self.data)
+        zs = [self.data.xpos[bid][2] for bid in self.foot_bids if bid >= 0]
+        z_min = min(zs)
+        leg_adrs = [adr for adr in self.j_dof_adr if adr is not None]
+        rows_base, rows_joints = [], []
+        for bid in self.foot_bids:
+            if bid < 0 or self.data.xpos[bid][2] > z_min + STANCE_Z_TOL:
+                continue
+            jacp = np.zeros((3, self.nv))
+            jacr = np.zeros((3, self.nv))
+            mj.mj_jacBody(self.model, self.data, jacp, jacr, bid)
+            rows_base.append(jacp[:, self.free_dofadr:self.free_dofadr + 3].copy())
+            rows_joints.append(jacp[:, leg_adrs].copy())
+        if not rows_base:
+            return np.zeros(3)
+        J_base = np.concatenate(rows_base, axis=0)
+        J_joints = np.concatenate(rows_joints, axis=0)
+        qd_legs = np.array([qvel[adr] for adr in leg_adrs])
+        return solve_stance_base_linvel(J_base, J_joints, qd_legs)
 
     def _motor_torques(self, clip: Dict, row: int, qpos: np.ndarray,
                        qvel: np.ndarray, kappa_j: np.ndarray,
