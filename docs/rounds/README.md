@@ -25,7 +25,7 @@
 
 ## 当前有效基准（速查）
 
-- **多数据集基准（现行，R9）**：T8 域内再辨识（TASK_20260903_015）+ **T9 终判五项全 PASS**（TASK_20260903_073，exit 0）→ `spi_identify/results/r9_indomain_params.json`；地板 holdout 14.04 / cross 14.24（仅域内证据计价）
+- **多数据集基准（现行，R9）**：T8 域内再辨识（TASK_20260903_015）+ **T9 终判五项全 PASS**（TASK_20260903_073，exit 0；判定时地板 14.04/14.24）+ 3-seed 复核全 PASS（MS TASK_20260904_013/014）→ `spi_identify/results/r9_indomain_params.json`；现行地板 holdout 15.0 / cross 14.405（3-seed 再基线 2026-09-04，报告 §2.5）
 - **原生单数据基准（R4）**：R4 辨识 + R7 冻结复验 PASS（TASK_20260902_034）→ `spi_identify/results/r4_native_identified_params.json`；R4 参数跨策略复验 ratio 0.318（T1）
 - **交叉基准**：F1 v15 参数原生复验 PASS（TASK_20260902_030）
-- κs 跨四轮稳定 0.36–0.43；骨盆质量 R4 3.43 / F1 3.78 / R9 3.15（差异在弱可观方向，R9 贴域下界提示单刚体骨盆为已知简化）→ 详见 [../sysid_path.md §2 路线 A](../sysid_path.md)
+- κs 跨轮稳定 0.36–0.48（含 3-seed 方差）；骨盆质量 R4 3.43 / F1 3.78 / R9 3.15，seed 方差 ±14%（3.15/3.62/4.21，无动捕质量方向固有不确定度，报告 §2.5）→ 详见 [../sysid_path.md §2 路线 A](../sysid_path.md)
