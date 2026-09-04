@@ -1,0 +1,59 @@
+[scan] zero/L=0.1s/train/r9 (144 clips)
+[scan] zero/L=0.1s/cross/nominal (60 clips)
+[scan] zero/L=0.1s/cross/r9 (60 clips)
+[scan] zero/L=0.2s/train/nominal (144 clips)
+[scan] zero/L=0.2s/train/r9 (144 clips)
+[scan] zero/L=0.2s/cross/nominal (60 clips)
+[scan] zero/L=0.2s/cross/r9 (60 clips)
+[scan] zero/L=0.5s/train/nominal (139 clips)
+[scan] zero/L=0.5s/train/r9 (139 clips)
+[scan] zero/L=0.5s/cross/nominal (60 clips)
+[scan] zero/L=0.5s/cross/r9 (60 clips)
+[scan] zero/L=1.0s/train/nominal (107 clips)
+[scan] zero/L=1.0s/train/r9 (107 clips)
+[scan] zero/L=1.0s/cross/nominal (56 clips)
+[scan] zero/L=1.0s/cross/r9 (56 clips)
+[scan] zero/L=2.0s/train/nominal (78 clips)
+[scan] zero/L=2.0s/train/r9 (78 clips)
+[scan] zero/L=2.0s/cross/nominal (39 clips)
+[scan] zero/L=2.0s/cross/r9 (39 clips)
+[scan] stance/L=0.1s/train/nominal (144 clips)
+[scan] stance/L=0.1s/train/r9 (144 clips)
+[scan] stance/L=0.1s/cross/nominal (60 clips)
+[scan] stance/L=0.1s/cross/r9 (60 clips)
+[scan] stance/L=0.2s/train/nominal (144 clips)
+[scan] stance/L=0.2s/train/r9 (144 clips)
+[scan] stance/L=0.2s/cross/nominal (60 clips)
+[scan] stance/L=0.2s/cross/r9 (60 clips)
+[scan] stance/L=0.5s/train/nominal (139 clips)
+[scan] stance/L=0.5s/train/r9 (139 clips)
+[scan] stance/L=0.5s/cross/nominal (60 clips)
+[scan] stance/L=0.5s/cross/r9 (60 clips)
+[scan] stance/L=1.0s/train/nominal (107 clips)
+[scan] stance/L=1.0s/train/r9 (107 clips)
+[scan] stance/L=1.0s/cross/nominal (56 clips)
+[scan] stance/L=1.0s/cross/r9 (56 clips)
+[scan] stance/L=2.0s/train/nominal (78 clips)
+[scan] stance/L=2.0s/train/r9 (78 clips)
+[scan] stance/L=2.0s/cross/nominal (39 clips)
+[scan] stance/L=2.0s/cross/r9 (39 clips)
+| v0-mode | L [s] | n | attitude err [deg] | joint err [rad] | accel err [m/s^2] |
+|---|---|---|---|---|---|
+| zero | 0.1 | 408 | 8.2 | 0.508 | 20.51 |
+| zero | 0.2 | 408 | 11.3 | 0.656 | 14.07 |
+| zero | 0.5 | 398 | 22.7 | 1.154 | 10.36 |
+| zero | 1.0 | 326 | 47.5 | 1.735 | 15.74 |
+| zero | 2.0 | 234 | 64.5 | 1.967 | 17.15 |
+| stance | 0.1 | 408 | 8.3 | 0.509 | 20.43 |
+| stance | 0.2 | 408 | 11.4 | 0.664 | 14.07 |
+| stance | 0.5 | 398 | 22.4 | 1.182 | 10.47 |
+| stance | 1.0 | 326 | 46.5 | 1.754 | 15.32 |
+| stance | 2.0 | 234 | 64.8 | 1.968 | 17.20 |
+
+## time-bin growth (2 s clips, r9 params)
+- zero/train: 0.1s:8deg/15 0.1s:15deg/8 0.2s:21deg/7 0.3s:29deg/8 0.5s:39deg/10 0.6s:52deg/13 0.7s:68deg/16 0.8s:81deg/17 0.8s:86deg/15 0.9s:87deg/13 1.1s:86deg/13 1.1s:85deg/13 1.2s:86deg/13 1.4s:86deg/13 1.4s:87deg/13 1.6s:87deg/13 1.6s:87deg/13 1.8s:87deg/13 1.9s:87deg/13 1.9s:87deg/13
+- zero/cross: 0.1s:8deg/12 0.1s:16deg/8 0.2s:23deg/8 0.3s:33deg/8 0.5s:47deg/8 0.6s:62deg/11 0.7s:74deg/15 0.8s:80deg/16 0.8s:81deg/15 0.9s:82deg/15 1.1s:82deg/14 1.1s:81deg/14 1.2s:81deg/13 1.4s:81deg/13 1.4s:81deg/13 1.6s:82deg/13 1.6s:82deg/13 1.8s:82deg/13 1.9s:83deg/14 1.9s:84deg/14
+- stance/train: 0.1s:8deg/15 0.1s:15deg/8 0.2s:21deg/7 0.3s:29deg/8 0.5s:39deg/10 0.6s:52deg/13 0.7s:67deg/17 0.8s:78deg/19 0.8s:84deg/16 0.9s:86deg/14 1.1s:86deg/13 1.1s:86deg/13 1.2s:87deg/13 1.4s:87deg/13 1.4s:88deg/13 1.6s:88deg/13 1.6s:88deg/13 1.8s:88deg/13 1.9s:89deg/13 1.9s:89deg/13
+- stance/cross: 0.1s:8deg/12 0.1s:16deg/9 0.2s:23deg/8 0.3s:34deg/8 0.5s:48deg/9 0.6s:62deg/12 0.7s:73deg/15 0.8s:78deg/15 0.8s:81deg/15 0.9s:82deg/13 1.1s:82deg/13 1.1s:83deg/13 1.2s:83deg/13 1.4s:83deg/13 1.4s:83deg/13 1.6s:83deg/13 1.6s:83deg/13 1.8s:83deg/13 1.9s:83deg/13 1.9s:84deg/13
+
+[scan] results -> logs/clip_scan/gm_play/clip_scan.json
