@@ -6,3 +6,7 @@ Total exhausted paths: pool 42 (acct-empty), 43 (mid-run kill of 145), 44 (acct-
 local keychain 3758 (run rejected). Recovery: replenish pool or fund any account, then single task per
 review §13 closure command:
   gm-run X1_identify/spi_identify/scripts/remote_sysid.py --validate-only --params-file=spi_identify/results/r9_indomain_params.json
+
+P1V attempt 6 (2026-09-05, post-terminal re-probe round 1): pool still EMPTY; local keychain account
+probe task TASK_20260905_032 — run accepted as "starting" then stuck in draft status "0" for 8+ min
+(zero logs), same signature as attempt 5's 170. Task deleted. Local account run-balance confirmed dead.
