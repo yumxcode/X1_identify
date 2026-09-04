@@ -33,7 +33,7 @@ sys.path.insert(0, str(ROOT / "spi_identify"))
 from spi.cost import CostWeights, PredictionCost, per_signal_cost  # noqa: E402
 from spi.dataset import FULL_JOINT_ORDER, JIDX, LEG_JOINTS, load_clips  # noqa: E402
 from spi.optimizer import build_space  # noqa: E402
-from spi.rollout import MuJoCoRollouter  # noqa: E402
+from spi.rollout import MuJoCoRollouter, body_map_from_cfg  # noqa: E402
 from spi.validate import assess, split_clips  # noqa: E402
 
 
@@ -109,7 +109,8 @@ def main() -> None:
 
     mjcf = (ROOT / cfg["model"]["mjcf"]).resolve()
     rollouter = MuJoCoRollouter(mjcf, base_body=cfg["model"]["base_body"],
-                                foot_bodies=tuple(cfg["model"]["foot_bodies"]))
+                                foot_bodies=tuple(cfg["model"]["foot_bodies"]),
+                                body_map=body_map_from_cfg(cfg))
     kmap = kappa_map_from_cfg(cfg)
     space_cfg_body_name = cfg["bodies"][0]["name"]
     weights = CostWeights.from_dict(cfg["cost"])

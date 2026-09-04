@@ -6,7 +6,7 @@ import numpy as np
 
 from spi.param_space import (phi_search_box, phi_to_physical, physical_to_phi,
                              phi_to_U, tanh_motor_torque, ParamSpace, BodyParams,
-                             MotorGroup, physical_violations,
+                             MotorGroup, physical_violations, com_bounds,
                              project_to_physical_domain,
                              physical_range_penalty)
 
@@ -214,6 +214,113 @@ class TestProjectToPhysicalDomain(unittest.TestCase):
         proj = project_to_physical_domain(params, [self._cfg_body()])
         self.assertEqual(proj["motors"]["knee"], 127.4)
         self.assertAlmostEqual(proj["kappa_s"], 0.361)
+
+
+class TestComDeltaAndMultiBody(unittest.TestCase):
+    """com_delta 相对域（躯干等标称 com 远离原点的刚体）+ 二刚体空间。"""
+
+    TORSO = {"name": "torso", "mjcf_body": "link_lumbar_pitch",
+             "nominal": {"mass": 9.08107,
+                         "com": [-0.000617851, 0.206789, -0.00114246],
+                         "inertia": [[0.15447, -0.00586, 0.00037],
+                                     [-0.00586, 0.0625, -0.00074],
+                                     [0.00037, -0.00074, 0.11822]]},
+             "mass_range": (6.0, 12.5), "com_delta": 0.06,
+             "inertia_diag_range": (0.03, 0.40), "inertia_offdiag_max": 0.02}
+
+    def test_com_bounds_relative(self):
+        lo, hi = com_bounds(self.TORSO)
+        self.assertTrue(np.allclose(lo, np.array(self.TORSO["nominal"]["com"]) - 0.06))
+        self.assertTrue(np.allclose(hi, np.array(self.TORSO["nominal"]["com"]) + 0.06))
+
+    def test_torso_nominal_not_violating(self):
+        # 绝对对称域会把标称 com_y=0.207 判越界；com_delta 语义下标称合法
+        p = {"bodies": {"torso": dict(self.TORSO["nominal"])}}
+        self.assertEqual(physical_violations(p, [self.TORSO]), {})
+
+    def test_torso_com_shift_violates(self):
+        n = dict(self.TORSO["nominal"])
+        n["com"] = list(np.array(n["com"]) + np.array([0.0, 0.2, 0.0]))
+        p = {"bodies": {"torso": n}}
+        viol = physical_violations(p, [self.TORSO])
+        self.assertIn("torso", viol)
+        self.assertIn("com_y", viol["torso"])
+
+    def test_projection_respects_delta(self):
+        n = dict(self.TORSO["nominal"])
+        n["com"] = list(np.array(n["com"]) + np.array([0.0, 0.5, 0.0]))
+        n["mass"] = 20.0
+        proj = project_to_physical_domain({"bodies": {"torso": n}}, [self.TORSO])
+        t = proj["bodies"]["torso"]
+        self.assertLessEqual(t["com"][1], 0.206789 + 0.06 + 1e-12)
+        self.assertLessEqual(t["mass"], 12.5)
+        self.assertEqual(physical_violations(proj, [self.TORSO]), {})
+
+    def test_phi_box_maps_relative_com(self):
+        body = BodyParams(body_name="torso",
+                          nominal={"mass": 9.08107,
+                                   "com": np.array([-0.000617851, 0.206789, -0.00114246]),
+                                   "inertia": np.diag([0.0625, 0.1182, 0.1545])},
+                          mass_range=(6.0, 12.5), com_range=(-99, 99),
+                          inertia_diag_range=(0.03, 0.40), com_delta=0.06)
+        c_lo, c_hi = body.com_box()
+        self.assertAlmostEqual(c_lo[1], 0.206789 - 0.06, places=12)
+        # per-axis box through phi_search_box: t_i = r_i * exp(alpha_nom)
+        box = phi_search_box({"mass": 9.08107}, (6.0, 12.5), (c_lo, c_hi),
+                             (0.03, 0.40))
+        a_nom = 0.5 * np.log(9.08107)
+        self.assertAlmostEqual(box[8, 0], (0.206789 - 0.06) * np.exp(a_nom), places=9)
+        self.assertAlmostEqual(box[8, 1], (0.206789 + 0.06) * np.exp(a_nom), places=9)
+
+    def test_two_body_space_builds_and_samples(self):
+        import yaml
+        cfg = yaml.safe_load(Path(__file__).resolve().parents[1].joinpath(
+            "configs", "x1_spi.yaml").read_text())
+        self.assertEqual([b["name"] for b in cfg["bodies"]], ["base", "torso"])
+        from spi.optimizer import build_space
+        space = build_space(cfg)
+        self.assertEqual(space.dim, 10 * 2 + len(cfg["motor_groups"]) + 1)
+        nom = space.nominal_params()
+        self.assertIn("base", nom["bodies"])
+        self.assertIn("torso", nom["bodies"])
+        self.assertAlmostEqual(nom["bodies"]["torso"]["mass"], 9.08107, places=5)
+        # nominal satisfies its own physical domain (com_delta semantics)
+        self.assertEqual(physical_violations(nom, cfg["bodies"]), {})
+        # optuna FixedTrial sampling within the phi box stays inside domain:
+        # mass axis = middle of the box
+        import optuna
+        optuna.logging.set_verbosity(optuna.logging.WARNING)
+        mid = {}
+        for b in space.bodies:
+            c_lo, c_hi = b.com_box()
+            a_nom = 0.5 * np.log(b.nominal["mass"])
+            for i, n in enumerate(["alpha", "d1", "d2", "d3"]):
+                pass
+            mid[f"{b.body_name}.alpha"] = a_nom
+        trial = optuna.trial.FixedTrial(mid)
+        # full mid-box sampling: use nominal phi (guaranteed in-box)
+        for b in space.bodies:
+            for n, v in zip(["alpha", "d1", "d2", "d3", "s12", "s13", "s23",
+                             "t1", "t2", "t3"], b.phi_nominal):
+                mid[f"{b.body_name}.{n}"] = float(v)
+        for g in space.motor_groups:
+            mid[f"kappa.{g.name}"] = g.kappa_nominal
+        mid["kappa_s"] = space.kappa_s_nominal
+        trial = optuna.trial.FixedTrial(mid)
+        params = space.sample(trial)
+        self.assertEqual(physical_violations(params, cfg["bodies"]), {})
+
+    def test_body_map_from_cfg(self):
+        import yaml
+        from spi.rollout import body_map_from_cfg
+        cfg = yaml.safe_load(Path(__file__).resolve().parents[1].joinpath(
+            "configs", "x1_spi.yaml").read_text())
+        bm = body_map_from_cfg(cfg)
+        self.assertEqual(bm["base"], cfg["model"]["base_body"])
+        self.assertEqual(bm["torso"], "link_lumbar_pitch")
+        # legacy single-body configs keep the default mapping
+        legacy = dict(cfg, bodies=[{"name": "base"}])
+        self.assertEqual(body_map_from_cfg(legacy), {"base": cfg["model"]["base_body"]})
 
 
 if __name__ == "__main__":

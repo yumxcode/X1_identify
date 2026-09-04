@@ -61,10 +61,14 @@ def phi_to_U(phi: np.ndarray) -> np.ndarray:
 
 
 def phi_to_physical(phi: np.ndarray) -> Dict[str, np.ndarray]:
-    """phi (R^10) -> {mass: float, com: (3,), inertia: (3,3) full matrix}.
+    """phi (R^10) -> {mass: float, com: (3,), inertia: (3,3) full matrix
+    about the COM in body-frame coordinates (MuJoCo body_inertia semantics).
 
     m = J[3,3];  h = J[:3,3] = m*r;  Sigma = J[:3,:3];
     I = tr(Sigma) * Identity(3) - Sigma   (pseudo-inertia inverse relations).
+    The pseudo-inertia encodes the ORIGIN-referenced inertia I_o = I_com +
+    m ((r.r) I3 - r r^T); we convert back so the whole pipeline (config,
+    rollouts, violations) consistently speaks COM inertia.
     """
     U = phi_to_U(phi)
     J = U @ U.T
@@ -74,12 +78,19 @@ def phi_to_physical(phi: np.ndarray) -> Dict[str, np.ndarray]:
     h = J[:3, 3]
     r = h / m
     Sigma = J[:3, :3]
-    I = np.trace(Sigma) * np.eye(3) - Sigma
+    I_o = np.trace(Sigma) * np.eye(3) - Sigma          # about body origin
+    r2 = float(r @ r)
+    I = I_o - m * (r2 * np.eye(3) - np.outer(r, r))    # -> about COM
     return {"mass": m, "com": r, "inertia": I}
 
 
 def physical_to_phi(mass: float, com: Sequence[float], inertia: Sequence[Sequence[float]]) -> np.ndarray:
-    """(m, r, I_full) -> phi. Used to anchor the nominal value and search box.
+    """(m, r, I_com_full) -> phi. Used to anchor the nominal value and search box.
+
+    The inertia argument is the COM-referenced body-frame inertia (MuJoCo
+    semantics, same as phi_to_physical returns and the same convention the
+    config/rollouts use); it is parallel-axis shifted to the body origin
+    before building the pseudo-inertia.
 
     Sigma = 0.5 tr(I) I3 - I; h = m r; J = [[Sigma, h],[h^T, m]]; phi from the
     *upper-triangular* Cholesky factor U with J = U U^T (paper Eq.2 form).
@@ -93,6 +104,10 @@ def physical_to_phi(mass: float, com: Sequence[float], inertia: Sequence[Sequenc
     if not np.allclose(I, I.T, atol=1e-9):
         I = 0.5 * (I + I.T)  # symmetrize
     Sigma = 0.5 * np.trace(I) * np.eye(3) - I
+    # parallel axis: COM inertia -> origin inertia (what J encodes)
+    r = np.asarray(com, dtype=float)
+    I_o = I + float(mass) * (float(r @ r) * np.eye(3) - np.outer(r, r))
+    Sigma = 0.5 * np.trace(I_o) * np.eye(3) - I_o
     h = float(mass) * np.asarray(com, dtype=float)
     J = np.zeros((4, 4))
     J[:3, :3] = Sigma
@@ -114,7 +129,7 @@ def physical_to_phi(mass: float, com: Sequence[float], inertia: Sequence[Sequenc
 
 def phi_search_box(nominal: Dict[str, np.ndarray],
                    mass_range: Tuple[float, float],
-                   com_range: Tuple[float, float],
+                   com_range,
                    inertia_diag_range: Tuple[float, float],
                    s_range: Tuple[float, float] = (-0.5, 0.5)) -> np.ndarray:
     """Anchor a phi-space box (10x2 lo/hi) from *physical* ranges (paper Tab.4).
@@ -140,10 +155,36 @@ def phi_search_box(nominal: Dict[str, np.ndarray],
     d_lo = 0.5 * np.log(i_lo) - a_nom
     d_hi = 0.5 * np.log(i_hi) - a_nom
     lo[1:4], hi[1:4] = d_lo, d_hi
-    c_lo, c_hi = com_range
+    # com_range: scalar (lo, hi) broadcast to 3 axes, or per-axis
+    # ((lo_x,lo_y,lo_z), (hi_x,hi_y,hi_z)) — the latter is produced by
+    # com_delta bodies (bounds around a non-centered nominal com).
+    c_lo = np.asarray(com_range[0], dtype=float)
+    c_hi = np.asarray(com_range[1], dtype=float)
+    if c_lo.ndim == 0:
+        c_lo = np.full(3, float(c_lo))
+        c_hi = np.full(3, float(c_hi))
     lo[7:10], hi[7:10] = c_lo * np.exp(a_nom), c_hi * np.exp(a_nom)
     lo[4:7], hi[4:7] = s_range
     return np.stack([lo, hi], axis=1)
+
+
+def com_bounds(b: Dict) -> Tuple[np.ndarray, np.ndarray]:
+    """Per-axis com bounds for a *yaml* body cfg entry.
+
+    Two semantics:
+      * com_range (lo, hi)  — absolute, symmetric, broadcast to 3 axes
+        (pelvis: nominal |r| < 0.031 centered near origin);
+      * com_delta d         — relative to b["nominal"]["com"] (bodies whose
+        nominal com is far from the body origin, e.g. the torso whose long
+        axis lies along body-y with com_y ~ 0.207 m — an absolute symmetric
+        range would flag the NOMINAL itself as a violation).
+    """
+    if b.get("com_delta") is not None:
+        n = np.asarray(b["nominal"]["com"], dtype=float)
+        d = float(b["com_delta"])
+        return n - d, n + d
+    return (np.full(3, float(b["com_range"][0])),
+            np.full(3, float(b["com_range"][1])))
 
 
 # ---------------------------------------------------------------------------
@@ -172,6 +213,7 @@ class BodyParams:
     mass_range: Tuple[float, float]
     com_range: Tuple[float, float]
     inertia_diag_range: Tuple[float, float]
+    com_delta: float = None     # relative com bounds (overrides com_range)
     # filled by nominal_phi()
     phi_nominal: np.ndarray = field(default=None, repr=False)
 
@@ -182,6 +224,13 @@ class BodyParams:
 
     def physical_from_phi(self, phi: np.ndarray) -> Dict[str, np.ndarray]:
         return phi_to_physical(phi)
+
+    def com_box(self) -> Tuple[np.ndarray, np.ndarray]:
+        if self.com_delta is not None:
+            n = np.asarray(self.nominal["com"], dtype=float)
+            return n - self.com_delta, n + self.com_delta
+        return (np.full(3, float(self.com_range[0])),
+                np.full(3, float(self.com_range[1])))
 
 
 @dataclass
@@ -201,9 +250,10 @@ class ParamSpace:
         """Draw one candidate from an optuna trial (uniform box, paper Tab.4)."""
         out: Dict = {"bodies": {}, "motors": {}, "kappa_s": None}
         for body in self.bodies:
+            c_lo, c_hi = body.com_box()
             box = phi_search_box(
                 {"mass": body.nominal["mass"]},
-                body.mass_range, body.com_range, body.inertia_diag_range)
+                body.mass_range, (c_lo, c_hi), body.inertia_diag_range)
             phi = np.array([
                 trial.suggest_float(f"{body.body_name}.{n}", box[i, 0], box[i, 1])
                 for i, n in enumerate(PHI_NAMES)])
@@ -272,12 +322,12 @@ def physical_violations(params: Dict, bodies_cfg: Sequence[Dict]) -> Dict[str, D
             viol["mass"] = m_lo - p["mass"]
         elif p["mass"] > m_hi:
             viol["mass"] = p["mass"] - m_hi
-        c_lo, c_hi = b["com_range"]
+        c_lo, c_hi = com_bounds(b)
         for i, ax in enumerate("xyz"):
-            if p["com"][i] < c_lo:
-                viol[f"com_{ax}"] = c_lo - p["com"][i]
-            elif p["com"][i] > c_hi:
-                viol[f"com_{ax}"] = p["com"][i] - c_hi
+            if p["com"][i] < c_lo[i]:
+                viol[f"com_{ax}"] = c_lo[i] - p["com"][i]
+            elif p["com"][i] > c_hi[i]:
+                viol[f"com_{ax}"] = p["com"][i] - c_hi[i]
         i_lo, i_hi = b["inertia_diag_range"]
         I = 0.5 * (np.asarray(p["inertia"]) + np.asarray(p["inertia"]).T)
         lam = np.linalg.eigvalsh(I)
@@ -321,7 +371,7 @@ def project_to_physical_domain(params: Dict, bodies_cfg: Sequence[Dict]) -> Dict
         p = params["bodies"][b["name"]]
         m_lo, m_hi = b["mass_range"]
         mass = float(np.clip(p["mass"], m_lo, m_hi))
-        c_lo, c_hi = b["com_range"]
+        c_lo, c_hi = com_bounds(b)
         com = np.clip(np.asarray(p["com"], dtype=float), c_lo, c_hi)
         I = 0.5 * (np.asarray(p["inertia"], dtype=float)
                    + np.asarray(p["inertia"], dtype=float).T)
@@ -370,11 +420,12 @@ def _relative_violations(params: Dict, bodies_cfg: Sequence[Dict]) -> Dict[str, 
         if not viol:
             continue
         m_lo, m_hi = b["mass_range"]
-        c_lo, c_hi = b["com_range"]
+        c_lo, c_hi = com_bounds(b)
         i_lo, i_hi = b["inertia_diag_range"]
         od_max = b.get("inertia_offdiag_max")
         spans = {"mass": m_hi - m_lo,
-                 "com_x": c_hi - c_lo, "com_y": c_hi - c_lo, "com_z": c_hi - c_lo,
+                 "com_x": c_hi[0] - c_lo[0], "com_y": c_hi[1] - c_lo[1],
+                 "com_z": c_hi[2] - c_lo[2],
                  "inertia_x": i_hi - i_lo, "inertia_y": i_hi - i_lo,
                  "inertia_z": i_hi - i_lo}
         if od_max is not None:

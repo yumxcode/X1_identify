@@ -34,8 +34,9 @@ def build_space(cfg: Dict) -> ParamSpace:
                      "com": np.array(nom["com"], dtype=float),
                      "inertia": I},
             mass_range=tuple(b["mass_range"]),
-            com_range=tuple(b["com_range"]),
+            com_range=tuple(b.get("com_range", (-1e9, 1e9))),
             inertia_diag_range=tuple(b["inertia_diag_range"]),
+            com_delta=(float(b["com_delta"]) if b.get("com_delta") is not None else None),
         ))
     groups = [MotorGroup(g["name"], g["joints"], float(g["kappa_nominal"]),
                          tuple(g["kappa_range"])) for g in cfg["motor_groups"]]

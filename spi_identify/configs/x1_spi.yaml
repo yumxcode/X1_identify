@@ -116,6 +116,27 @@ bodies:
     # （对角仅 0.09），主轴相对体坐标旋转 ~40°，骨盆物理上不可能，属于参数
     # 吸收模型误差。名义非对角 ~1e-4；0.03 ≈ 最大名义对角的 1.1x，仍宽松。
     inertia_offdiag_max: 0.03
+  # ---- torso body (2026-09-04 二刚体扩展，报告 §7.3) ----------------------
+  # 动机：GRF 整机 +1.8% 与单刚体骨盆 -27%（R9 3.152，seed 方差 ±14%）并存
+  # 指向未建模质量分布（电池/线束/上躯干载荷）；link_lumbar_pitch（9.08 kg，
+  # 全树最大单刚体，肩臂腰链的父体）是文档评审指出的扩展方向。
+  # 标称取自 vendored MJCF xyber_x1_serial.xml link_lumbar_pitch 的
+  # inertial（diaginertia+iquat 已换算为体系 fullinertia，ixx iyy izz ixy ixz iyz）。
+  # 注意该 body 的长轴沿体系 y（body quat 绕 y 转 90°），标称 com_y=0.207 m
+  # ——com 域必须用相对语义 com_delta（绝对对称带会把标称自身判越界）。
+  - name: "torso"
+    mjcf_body: "link_lumbar_pitch"
+    nominal:
+      mass: 9.08107
+      com: [-0.000617851, 0.206789, -0.00114246]
+      inertia:
+        - [0.15447075, -0.00586456, 0.00037378]
+        - [-0.00586456, 0.06249685, -0.00074019]
+        - [0.00037378, -0.00074019, 0.11821870]
+    mass_range: [6.0, 12.5]       # nominal 9.08 kg（电池/外接载荷余量 ~±35%）
+    com_delta: 0.06               # 标称 com ±0.06 m（相对域；三轴同宽）
+    inertia_diag_range: [0.03, 0.40]   # 标称特征值 [0.062, 0.118, 0.155]
+    inertia_offdiag_max: 0.02     # 标称 |Ixy| 0.0059（3.4x 余量）
 
 motor_groups:                     # tanh saturation kappa per joint group
   - name: hip_pitch

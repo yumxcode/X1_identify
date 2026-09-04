@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -153,36 +154,90 @@ def main() -> None:
     args = ap.parse_args()
 
     payload = json.loads(Path(args.params).read_text())
-    p = payload["best_params"]["bodies"]["base"]
-    # coercion: JSON round-trips may deliver strings (run_spi json default=str)
-    mass_raw = float(p["mass"])
-    com_raw = np.asarray(_parse_nd(p["com"]), dtype=float)
-    I_raw = np.asarray(_parse_nd(p["inertia"]), dtype=float).reshape(3, 3)
 
-    mass, com, I, notes = clamp_physical(mass_raw, com_raw, I_raw,
-                                         clamp=not args.no_clamp)
-    print(f"[apply] identified pelvis (raw): m={mass_raw:.4f} com={com_raw.round(5)} "
-          f"I_diag={np.diag(I_raw).round(5)}")
-    if notes:
-        for n in notes:
-            print(f"[apply] CLAMP: {n}")
-    print(f"[apply] exported pelvis      : m={mass:.4f} com={com.round(5)} "
-          f"I_diag={np.diag(I).round(5)}")
+    # multi-body: read body definitions (nominal + physical domain + mjcf body
+    # name) from the identification config; bodies absent from the payload are
+    # skipped (older single-body results keep working).
+    import yaml
+    cfg_path = ROOT / "spi_identify/configs/x1_spi.yaml"
+    cfg_bodies = yaml.safe_load(cfg_path.read_text())["bodies"] \
+        if cfg_path.exists() else []
+    sys.path.insert(0, str(ROOT / "spi_identify"))
+    from spi.param_space import project_to_physical_domain  # noqa: E402
+
+    raw_bodies = {}
+    for name, p in payload["best_params"]["bodies"].items():
+        raw_bodies[name] = {
+            "mass": float(p["mass"]),
+            "com": np.asarray(_parse_nd(p["com"]), dtype=float),
+            "inertia": np.asarray(_parse_nd(p["inertia"]), dtype=float).reshape(3, 3),
+        }
+
+    if args.no_clamp:
+        exported = {k: dict(v) for k, v in raw_bodies.items()}
+        clamp_notes: dict = {}
+    else:
+        # project ALL payload bodies present in the config domain (same
+        # semantics as the in-loop span-normalized penalty; older results with
+        # bodies outside the config pass through untouched via a 1-entry cfg)
+        cfg_subset = [b for b in cfg_bodies if b["name"] in raw_bodies] or \
+            [{"name": n, "mass_range": (0.0, 1e9), "com_range": (-1e9, 1e9),
+              "inertia_diag_range": (0.0, 1e9)} for n in raw_bodies]
+        proj = project_to_physical_domain(
+            {"bodies": raw_bodies, "motors": {}, "kappa_s": 1.0}, cfg_subset)
+        exported = proj["bodies"]
+        for name in raw_bodies:
+            n0, n1 = raw_bodies[name], exported[name]
+            changed = not (np.isclose(n0["mass"], n1["mass"])
+                           and np.allclose(n0["com"], n1["com"])
+                           and np.allclose(n0["inertia"], n1["inertia"]))
+            clamp_notes[name] = bool(changed)
+
+    for name in raw_bodies:
+        mjcf_name = next((b.get("mjcf_body", args.mjcf_body)
+                          for b in cfg_bodies if b["name"] == name), args.mjcf_body)
+        n0, n1 = raw_bodies[name], exported[name]
+        print(f"[apply] {name} (raw): m={n0['mass']:.4f} com={n0['com'].round(5).tolist()} "
+              f"I_diag={np.diag(n0['inertia']).round(5).tolist()}")
+        if clamp_notes.get(name):
+            print(f"[apply] CLAMP: {name} projected to configured physical domain")
+        print(f"[apply] {name} (export): m={n1['mass']:.4f} com={n1['com'].round(5).tolist()} "
+              f"I_diag={np.diag(n1['inertia']).round(5).tolist()}")
+
+    # legacy single-body aliases (pelvis) for downstream consumers
+    p = exported.get("base") or next(iter(exported.values()))
+    mass, com, I = float(p["mass"]), np.asarray(p["com"], float), np.asarray(p["inertia"], float)
+    mass_raw, com_raw = raw_bodies.get("base", p)["mass"], raw_bodies.get("base", p)["com"]
+    I_raw = raw_bodies.get("base", p)["inertia"]
+    notes = [f"{k} projected to physical domain" for k, v in clamp_notes.items() if v]
 
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
 
     urdf_path = Path(args.urdf)
     if urdf_path.exists():
-        text = patch_urdf(urdf_path.read_text(), args.urdf_body, mass, com, I)
-        (out / "x1_identified.urdf").write_text(text)
-        print(f"[apply] URDF -> {out / 'x1_identified.urdf'}")
+        b = exported.get("base")
+        if b is not None:  # URDF carries only the pelvis (legs model)
+            text = patch_urdf(urdf_path.read_text(), args.urdf_body,
+                              float(b["mass"]), np.asarray(b["com"], float),
+                              np.asarray(b["inertia"], float))
+            (out / "x1_identified.urdf").write_text(text)
+            print(f"[apply] URDF -> {out / 'x1_identified.urdf'}")
+        else:
+            print("[apply] no 'base' body in params; URDF patch skipped")
     else:
         print("[apply] URDF source not found; skipped (pass --urdf)")
 
     mjcf_path = Path(args.mjcf)
     if mjcf_path.exists():
-        text = patch_mjcf(mjcf_path.read_text(), args.mjcf_body, mass, com, I)
+        text = mjcf_path.read_text()
+        for name, b in exported.items():
+            mjcf_name = next((bb.get("mjcf_body", args.mjcf_body)
+                              for bb in cfg_bodies if bb["name"] == name), args.mjcf_body)
+            text = patch_mjcf(text, mjcf_name, float(b["mass"]),
+                              np.asarray(b["com"], float),
+                              np.asarray(b["inertia"], float))
+            print(f"[apply] MJCF body '{mjcf_name}' ({name}) patched")
         (out / "xyber_x1_identified.xml").write_text(text)
         print(f"[apply] MJCF -> {out / 'xyber_x1_identified.xml'}")
     else:
@@ -196,8 +251,15 @@ def main() -> None:
                        for i in range(3)]
     dr["motor_kappa"] = {k: float(v) for k, v in payload["best_params"]["motors"].items()}
     dr["kappa_s"] = float(payload["best_params"]["kappa_s"])
-    dr["raw"] = {"mass": mass_raw, "com": com_raw.tolist(),
-                 "inertia": I_raw.tolist(), "clamped": bool(notes)}
+    dr["bodies"] = {name: {"mass": float(b["mass"]),
+                           "com": np.asarray(b["com"], float).tolist(),
+                           "mjcf_body": next(
+                               (bb.get("mjcf_body", "x1-body")
+                                for bb in cfg_bodies if bb["name"] == name), "x1-body")}
+                    for name, b in exported.items()}
+    dr["raw"] = {"mass": float(mass_raw), "com": np.asarray(com_raw, float).tolist(),
+                 "inertia": np.asarray(I_raw, float).tolist(),
+                 "clamped": bool(notes)}
     (out / "dr_x1_spi.json").write_text(json.dumps(dr, indent=2))
     print(f"[apply] DR  -> {out / 'dr_x1_spi.json'}")
 

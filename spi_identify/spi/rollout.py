@@ -80,7 +80,8 @@ def mat2quat_wxyz(R: np.ndarray) -> np.ndarray:
 class MuJoCoRollouter:
     def __init__(self, mjcf_path: str | Path, base_body: str = "link_base",
                  foot_bodies: Tuple[str, ...] = ("link_left_ankle_roll", "link_right_ankle_roll"),
-                 gyro_in_body_frame: bool = True):
+                 gyro_in_body_frame: bool = True,
+                 body_map: Optional[Dict[str, str]] = None):
         import mujoco  # lazy
 
         self._mj = mujoco
@@ -89,6 +90,15 @@ class MuJoCoRollouter:
         self.base_bid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, base_body)
         if self.base_bid < 0:
             raise ValueError(f"body '{base_body}' not found in {mjcf_path}")
+        # param-space body name -> mjcf body name (multi-body identification;
+        # default keeps the legacy single-body behaviour {"base": base_body})
+        self.body_map = dict(body_map) if body_map else {"base": base_body}
+        self._body_bids = {}
+        for pname, mname in self.body_map.items():
+            bid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, mname)
+            if bid < 0:
+                raise ValueError(f"body '{mname}' (param '{pname}') not found in {mjcf_path}")
+            self._body_bids[pname] = bid
         self.foot_bids = [mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, f)
                           for f in foot_bodies]
         self.gyro_in_body_frame = gyro_in_body_frame
@@ -120,40 +130,55 @@ class MuJoCoRollouter:
         self.free_dofadr = self.model.jnt_dofadr[base_jid]
         self.nq, self.nv, self.nu = self.model.nq, self.model.nv, self.model.nu
 
-        # nominal inertial values (for reset)
+        # nominal inertial values per identified body (for reset)
         self._nominal = {
-            "mass": float(self.model.body_mass[self.base_bid]),
-            "ipos": self.model.body_ipos[self.base_bid].copy(),
-            "inertia": self.model.body_inertia[self.base_bid].copy(),
-            "iquat": self.model.body_iquat[self.base_bid].copy(),
+            pname: {"mass": float(self.model.body_mass[bid]),
+                    "ipos": self.model.body_ipos[bid].copy(),
+                    "inertia": self.model.body_inertia[bid].copy(),
+                    "iquat": self.model.body_iquat[bid].copy()}
+            for pname, bid in self._body_bids.items()
         }
 
     # ------------------------------------------------------------------
     def set_body_params(self, params: Dict) -> None:
-        """Apply identified (m, r, I_full) of the base body to the model."""
+        """Apply identified (m, r, I_full) of every mapped body to the model."""
         mj = self._mj
-        p = params["bodies"].get(self._base_name)
-        if p is None:
-            return
-        self.model.body_mass[self.base_bid] = p["mass"]
-        self.model.body_ipos[self.base_bid] = p["com"]
-        I = np.asarray(p["inertia"], dtype=float)
-        I = 0.5 * (I + I.T)
-        lam, V = np.linalg.eigh(I)          # I = V diag(lam) V^T, V columns axes
-        if np.linalg.det(V) < 0:            # ensure right-handed frame
-            V[:, 0] = -V[:, 0]
-        self.model.body_inertia[self.base_bid] = np.maximum(lam, 1e-9)
-        self.model.body_iquat[self.base_bid] = mat2quat_wxyz(V)
+        for pname, bid in self._body_bids.items():
+            p = params["bodies"].get(pname)
+            if p is None:
+                continue
+            self.model.body_mass[bid] = p["mass"]
+            self.model.body_ipos[bid] = p["com"]
+            I = np.asarray(p["inertia"], dtype=float)
+            I = 0.5 * (I + I.T)
+            lam, V = np.linalg.eigh(I)      # I = V diag(lam) V^T, V columns axes
+            if np.linalg.det(V) < 0:        # ensure right-handed frame
+                V[:, 0] = -V[:, 0]
+            self.model.body_inertia[bid] = np.maximum(lam, 1e-9)
+            self.model.body_iquat[bid] = mat2quat_wxyz(V)
         mj.mj_setConst(self.model, self.data)   # recompute derived quantities
 
     def reset_body_params(self) -> None:
-        self.model.body_mass[self.base_bid] = self._nominal["mass"]
-        self.model.body_ipos[self.base_bid] = self._nominal["ipos"]
-        self.model.body_inertia[self.base_bid] = self._nominal["inertia"]
-        self.model.body_iquat[self.base_bid] = self._nominal["iquat"]
+        for pname, bid in self._body_bids.items():
+            nom = self._nominal[pname]
+            self.model.body_mass[bid] = nom["mass"]
+            self.model.body_ipos[bid] = nom["ipos"]
+            self.model.body_inertia[bid] = nom["inertia"]
+            self.model.body_iquat[bid] = nom["iquat"]
         self._mj.mj_setConst(self.model, self.data)
 
     _base_name = "base"  # key into params["bodies"] (mapped from config)
+
+
+def body_map_from_cfg(cfg: Dict) -> Dict[str, str]:
+    """param-space body name -> mjcf body name, from the parsed yaml config.
+
+    Each cfg["bodies"] entry may set ``mjcf_body`` (the MJCF body whose
+    inertial is identified); entries without it map to cfg.model.base_body
+    (legacy single-body behaviour). Pure function; unit-testable.
+    """
+    default = cfg["model"]["base_body"]
+    return {b["name"]: b.get("mjcf_body", default) for b in cfg["bodies"]}
 
     # ------------------------------------------------------------------
     def _initial_state(self, clip: Dict) -> Tuple[np.ndarray, np.ndarray]:
