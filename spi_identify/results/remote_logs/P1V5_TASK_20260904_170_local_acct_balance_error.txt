@@ -10,3 +10,8 @@ review §13 closure command:
 P1V attempt 6 (2026-09-05, post-terminal re-probe round 1): pool still EMPTY; local keychain account
 probe task TASK_20260905_032 — run accepted as "starting" then stuck in draft status "0" for 8+ min
 (zero logs), same signature as attempt 5's 170. Task deleted. Local account run-balance confirmed dead.
+
+P1V attempt 7, TERMINAL (2026-09-05, final round 2/2): pool EMPTY for 12h+ across both wait rounds;
+local keychain account probe TASK_20260905_033 run-rejected identically (draft status 0, zero logs, deleted).
+Seven attempts total, zero compute. Conclusion: P1V remote evidence is externally blocked until ANY gradmotion
+account is funded/replenished. Single-task recovery path (review §13) remains valid and unchanged.
