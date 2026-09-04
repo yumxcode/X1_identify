@@ -1,0 +1,78 @@
+{
+  "randomize_base_mass": true,
+  "added_mass_range_comment": "centred on identified mass, +/-5% (paper nominal DR)",
+  "randomize_com": true,
+  "com_range_comment": "identified com +/- 0.03 m (paper nominal +/-0.1 around URDF)",
+  "randomize_gains": true,
+  "stiffness_multiplier_range": [
+    0.9,
+    1.1
+  ],
+  "damping_multiplier_range": [
+    0.9,
+    1.1
+  ],
+  "randomize_torque": true,
+  "randomize_link_mass": true,
+  "added_link_mass_range": [
+    0.95,
+    1.05
+  ],
+  "identified_mass": 3.1519615384257644,
+  "identified_com": [
+    0.02255454,
+    0.02409425,
+    -0.01261008
+  ],
+  "added_mass_range": [
+    2.9944,
+    3.3096
+  ],
+  "com_range": [
+    [
+      -0.00745,
+      0.05255
+    ],
+    [
+      -0.00591,
+      0.05409
+    ],
+    [
+      -0.04261,
+      0.01739
+    ]
+  ],
+  "motor_kappa": {
+    "hip_pitch": 76.05733927598162,
+    "hip_rolleyaw": 39.75707053778301,
+    "knee": 73.06738339710581,
+    "ankle": 19.763074805608767
+  },
+  "kappa_s": 0.3700928084351175,
+  "raw": {
+    "mass": 3.1519615384257644,
+    "com": [
+      0.02255454,
+      0.02409425,
+      -0.01261008
+    ],
+    "inertia": [
+      [
+        0.01900623,
+        -0.01917668,
+        0.01034941
+      ],
+      [
+        -0.01917668,
+        0.11025736,
+        0.0067361
+      ],
+      [
+        0.01034941,
+        0.0067361,
+        0.11126854
+      ]
+    ],
+    "clamped": false
+  }
+}

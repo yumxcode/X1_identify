@@ -1,0 +1,497 @@
+{
+ "snapshot": {
+  "generated_at": "2026-09-04 03:21 UTC",
+  "param_version": "R9 (seed1, TASK_20260903_015) — official, T9 TASK_20260903_073 exit 0",
+  "joint_params_version": "T7 (TASK_20260902_222); post-hoc T10 (TASK_20260903_082) revised method, verdict unchanged",
+  "report": "docs/rounds/2026-09-03_multidataset_sysid_report.md",
+  "model_artifacts_consistent_with_R9": true,
+  "regenerate": "python3 scripts/make_output.py"
+ },
+ "spi_r9": {
+  "params": {
+   "bodies": {
+    "base": {
+     "mass": 3.1519615384257644,
+     "com": "[ 0.02255454  0.02409425 -0.01261008]",
+     "inertia": "[[ 0.01900623 -0.01917668  0.01034941]\n [-0.01917668  0.11025736  0.0067361 ]\n [ 0.01034941  0.0067361   0.11126854]]"
+    }
+   },
+   "motors": {
+    "hip_pitch": 76.05733927598162,
+    "hip_rolleyaw": 39.75707053778301,
+    "knee": 73.06738339710581,
+    "ankle": 19.763074805608767
+   },
+   "kappa_s": 0.3700928084351175
+  },
+  "holdout": {
+   "eff_ratio": 0.358,
+   "accel_rms_best": 13.541,
+   "accel_rms_nominal": 17.289
+  },
+  "cross": {
+   "ratio": 0.307,
+   "accel_rms_best": 13.94,
+   "accel_rms_nominal": 22.262
+  },
+  "five_final_gates": [
+   {
+    "gate": "EFFECTIVENESS",
+    "measured": 0.358,
+    "threshold": "<= 0.70",
+    "pass": true
+   },
+   {
+    "gate": "PHYSICAL",
+    "measured": "in-domain (by construction)",
+    "threshold": "x1_spi.yaml box",
+    "pass": true
+   },
+   {
+    "gate": "ACCEL",
+    "measured": 13.541,
+    "threshold": "<= 14.04 (T9) / 15.0 (3-seed re-baseline)",
+    "pass": true
+   },
+   {
+    "gate": "ACTUATOR",
+    "measured": 0.3701,
+    "threshold": "[0.34, 0.71]",
+    "pass": true
+   },
+   {
+    "gate": "CROSS-DATASET",
+    "measured": "ratio 0.307 / rms 13.94",
+    "threshold": "ratio <= 0.70, rms <= 14.24 (3-seed: 14.405)",
+    "pass": true
+   }
+  ],
+  "gates_rationale": {
+   "EFFECTIVENESS": "holdout cost ratio <= 0.70",
+   "PHYSICAL": "m/com/I inside x1_spi.yaml physical box",
+   "ACCEL": "holdout specific-force RMS <= 14.04 (T9 floor; 3-seed re-baseline: 15.0)",
+   "ACTUATOR": "kappa_s in [0.34, 0.71]",
+   "CROSS-DATASET": "cross ratio <= 0.70 and RMS <= 14.24 (3-seed re-baseline: 14.405)"
+  },
+  "seed_stability": {
+   "seed1 (R9, official)": {
+    "pelvis_mass_kg": 3.152,
+    "kappa_s": 0.37,
+    "holdout_accel_rms": 13.541,
+    "cross_accel_rms": 13.94
+   },
+   "seed2": {
+    "pelvis_mass_kg": 4.205,
+    "kappa_s": 0.482,
+    "holdout_accel_rms": 13.099,
+    "cross_accel_rms": 13.894
+   },
+   "seed3": {
+    "pelvis_mass_kg": 3.619,
+    "kappa_s": 0.409,
+    "holdout_accel_rms": 14.759,
+    "cross_accel_rms": 14.105
+   }
+  },
+  "credibility": {
+   "pelvis_mass": "high (vs nominal; absolute seed spread +/-14%)",
+   "com": "medium",
+   "inertia": "low (no-mocap weak observability)",
+   "kappa_knee/ankle/kappa_s": "high",
+   "kappa_hip": "medium"
+  },
+  "cross_round_consistency": {
+   "kappa_s": {
+    "R4": 0.396,
+    "F1_v14": 0.434,
+    "R8": 0.361,
+    "R9": 0.37
+   },
+   "pelvis_mass_kg": {
+    "R4": 3.428,
+    "F1_v14": 3.783,
+    "R9": 3.152
+   },
+   "note": "pelvis single-rigid-body is a known simplification; R9 sits near the 3.0 lower bound"
+  }
+ },
+ "joint_level": {
+  "model": "tau_meas - g(q) = J_eff*qdd + tau_c*tanh(qd/eps) + tau_v*qd + c0 (+ gyro coupling, serial)",
+  "per_joint": [
+   {
+    "joint": "left_ankle_pitch_joint",
+    "type": "parallel-ankle",
+    "J_eff_kg_m2": 0.0643,
+    "tau_c_Nm": 1.24,
+    "tau_v_Nm_s_rad": 0.551,
+    "delay_ms": 8.0,
+    "m1_alpha": 5.943,
+    "m1_R2": 0.05,
+    "kt": 68.2,
+    "kt_R2": 1.0,
+    "dyn_R2": 0.16
+   },
+   {
+    "joint": "left_ankle_roll_joint",
+    "type": "parallel-ankle",
+    "J_eff_kg_m2": 0.0212,
+    "tau_c_Nm": 0.83,
+    "tau_v_Nm_s_rad": 0.145,
+    "delay_ms": 8.0,
+    "m1_alpha": 2.286,
+    "m1_R2": 0.01,
+    "kt": 68.2,
+    "kt_R2": 1.0,
+    "dyn_R2": 0.31
+   },
+   {
+    "joint": "left_hip_pitch_joint",
+    "type": "serial",
+    "J_eff_kg_m2": 0.3848,
+    "tau_c_Nm": 1.91,
+    "tau_v_Nm_s_rad": 0.533,
+    "delay_ms": 9.0,
+    "m1_alpha": 0.724,
+    "m1_R2": 0.86,
+    "kt": 190.6,
+    "kt_R2": 1.0,
+    "dyn_R2": 0.8
+   },
+   {
+    "joint": "left_hip_roll_joint",
+    "type": "serial",
+    "J_eff_kg_m2": 0.2938,
+    "tau_c_Nm": 1.88,
+    "tau_v_Nm_s_rad": 1.136,
+    "delay_ms": 9.0,
+    "m1_alpha": 0.831,
+    "m1_R2": 0.84,
+    "kt": 190.6,
+    "kt_R2": 1.0,
+    "dyn_R2": 0.57
+   },
+   {
+    "joint": "left_hip_yaw_joint",
+    "type": "serial",
+    "J_eff_kg_m2": 0.0362,
+    "tau_c_Nm": 0.1,
+    "tau_v_Nm_s_rad": 0.173,
+    "delay_ms": 7.0,
+    "m1_alpha": 0.528,
+    "m1_R2": 0.39,
+    "kt": 21.9,
+    "kt_R2": 1.0,
+    "dyn_R2": 0.86
+   },
+   {
+    "joint": "left_knee_pitch_joint",
+    "type": "serial",
+    "J_eff_kg_m2": 0.2549,
+    "tau_c_Nm": 1.71,
+    "tau_v_Nm_s_rad": 0.392,
+    "delay_ms": 9.0,
+    "m1_alpha": 0.644,
+    "m1_R2": 0.77,
+    "kt": 190.6,
+    "kt_R2": 1.0,
+    "dyn_R2": 0.53
+   },
+   {
+    "joint": "right_ankle_pitch_joint",
+    "type": "parallel-ankle",
+    "J_eff_kg_m2": 0.0819,
+    "tau_c_Nm": 1.22,
+    "tau_v_Nm_s_rad": -0.386,
+    "delay_ms": 8.0,
+    "m1_alpha": 6.2,
+    "m1_R2": -0.45,
+    "kt": 68.2,
+    "kt_R2": 1.0,
+    "dyn_R2": 0.37
+   },
+   {
+    "joint": "right_ankle_roll_joint",
+    "type": "parallel-ankle",
+    "J_eff_kg_m2": 0.0237,
+    "tau_c_Nm": 0.49,
+    "tau_v_Nm_s_rad": -0.118,
+    "delay_ms": 8.0,
+    "m1_alpha": 1.916,
+    "m1_R2": -0.01,
+    "kt": 68.2,
+    "kt_R2": 1.0,
+    "dyn_R2": 0.43
+   },
+   {
+    "joint": "right_hip_pitch_joint",
+    "type": "serial",
+    "J_eff_kg_m2": 0.3098,
+    "tau_c_Nm": 1.77,
+    "tau_v_Nm_s_rad": 0.8,
+    "delay_ms": 9.0,
+    "m1_alpha": 0.702,
+    "m1_R2": 0.88,
+    "kt": 190.6,
+    "kt_R2": 1.0,
+    "dyn_R2": 0.7
+   },
+   {
+    "joint": "right_hip_roll_joint",
+    "type": "serial",
+    "J_eff_kg_m2": 0.3898,
+    "tau_c_Nm": 1.79,
+    "tau_v_Nm_s_rad": 0.625,
+    "delay_ms": 8.0,
+    "m1_alpha": 0.755,
+    "m1_R2": 0.87,
+    "kt": 190.6,
+    "kt_R2": 1.0,
+    "dyn_R2": 0.66
+   },
+   {
+    "joint": "right_hip_yaw_joint",
+    "type": "serial",
+    "J_eff_kg_m2": 0.0362,
+    "tau_c_Nm": 0.13,
+    "tau_v_Nm_s_rad": 0.124,
+    "delay_ms": 6.0,
+    "m1_alpha": 0.483,
+    "m1_R2": 0.47,
+    "kt": 21.9,
+    "kt_R2": 1.0,
+    "dyn_R2": 0.88
+   },
+   {
+    "joint": "right_knee_pitch_joint",
+    "type": "serial",
+    "J_eff_kg_m2": 0.2213,
+    "tau_c_Nm": 1.16,
+    "tau_v_Nm_s_rad": 0.328,
+    "delay_ms": 9.0,
+    "m1_alpha": 0.629,
+    "m1_R2": 0.78,
+    "kt": 190.6,
+    "kt_R2": 1.0,
+    "dyn_R2": 0.5
+   }
+  ],
+  "gates": [
+   {
+    "id": "J1_DYNAMICS_R2",
+    "ok": false,
+    "detail": "left_knee_pitch_joint R2=0.534<0.6; right_knee_pitch_joint R2=0.498<0.6"
+   },
+   {
+    "id": "J2_LR_SYMMETRY",
+    "ok": false,
+    "detail": "worst left_hip_roll_joint|right_hip_roll_joint.tau_v rel_diff=0.82 (<= 0.35); 4 violations / 16 pairs"
+   },
+   {
+    "id": "J3_GAIN_BAND",
+    "ok": false,
+    "detail": "left_hip_roll_joint alpha=0.831 outside (0.34, 0.71)+-0.10"
+   },
+   {
+    "id": "J4_DELAY",
+    "ok": true,
+    "detail": "serial delays within (-5.0, 30.0) ms: left_hip_pitch_joint:9.0, left_hip_roll_joint:9.0, left_hip_yaw_joint:7.0, left_knee_pitch_joint:9.0, right_hip_pitch_joint:9.0, right_hip_roll_joint:8.0, right_hip_yaw_joint:6.0, right_knee_pitch_joint:9.0"
+   },
+   {
+    "id": "J5_CURRENT_MAP",
+    "ok": true,
+    "detail": "kt R2 >= 0.9 on all 12 joints"
+   }
+  ],
+  "verdict": "FAIL",
+  "exit_code": 1,
+  "written_back_to_model_files": false,
+  "note": "J4/J5 PASS; J1/J2/J3 marginal FAIL (root causes quantified in report §3.2). Parameters delivered as reference values only — NOT patched into URDF/MJCF."
+ },
+ "grf_whole_body_mass": {
+  "straight": {
+   "n": 7,
+   "mean_mass_kg": 35.943,
+   "band": [
+    32.0,
+    40.0
+   ],
+   "vs_nominal_urdf_pct": 1.8,
+   "verdict": "PASS"
+  },
+  "lateral_reference_ungated": {
+   "n": 4,
+   "mean_mass_kg": 30.421,
+   "note": "(J^T)^-1 GRF bias in lateral/turning regimes (-14%); method limitation, not gated"
+  },
+  "nominal_urdf_total_kg": 35.323,
+  "per_file": [
+   {
+    "file": "data/raw/walk_diag_20260824_103222.csv",
+    "mass_kg": 37.87,
+    "ci95": [
+     32.522,
+     45.773
+    ],
+    "frames": 79
+   },
+   {
+    "file": "data/raw/20260902_x1data/5999model/walk_diag_20260818_103839.csv",
+    "mass_kg": 28.962,
+    "ci95": [
+     21.573,
+     36.672
+    ],
+    "frames": 106
+   },
+   {
+    "file": "data/raw/20260902_x1data/5999model/walk_diag_20260818_144943.csv",
+    "mass_kg": 28.917,
+    "ci95": [
+     21.349,
+     38.548
+    ],
+    "frames": 118
+   },
+   {
+    "file": "data/raw/20260902_x1data/5999model/walk_diag_20260820_144337.csv",
+    "mass_kg": 28.093,
+    "ci95": [
+     21.923,
+     42.031
+    ],
+    "frames": 120
+   },
+   {
+    "file": "data/raw/20260902_x1data/5999model/walk_diag_20260825_160521.csv",
+    "mass_kg": 35.712,
+    "ci95": [
+     22.049,
+     53.741
+    ],
+    "frames": 103
+   },
+   {
+    "file": "data/raw/20260902_x1data/7500model/walk_diag_20260901_163320.csv",
+    "mass_kg": 34.628,
+    "ci95": [
+     29.299,
+     38.81
+    ],
+    "frames": 94
+   },
+   {
+    "file": "data/raw/20260902_x1data/7500model_addDR/walk_diag_20260831_141833.csv",
+    "mass_kg": 35.709,
+    "ci95": [
+     28.773,
+     43.556
+    ],
+    "frames": 84
+   },
+   {
+    "file": "data/raw/20260902_x1data/7500model_addDR/walk_diag_20260831_142556.csv",
+    "mass_kg": 32.159,
+    "ci95": [
+     28.397,
+     36.952
+    ],
+    "frames": 95
+   },
+   {
+    "file": "data/raw/20260902_x1data/7500model_addDR/walk_diag_20260901_155946.csv",
+    "mass_kg": 33.805,
+    "ci95": [
+     29.49,
+     38.788
+    ],
+    "frames": 112
+   },
+   {
+    "file": "data/raw/20260902_x1data/7500model_addDR/walk_diag_20260902_093745.csv",
+    "mass_kg": 43.28,
+    "ci95": [
+     38.887,
+     45.987
+    ],
+    "frames": 116
+   },
+   {
+    "file": "data/raw/20260902_x1data/7500model_addDR/walk_diag_20260902_094252.csv",
+    "mass_kg": 34.153,
+    "ci95": [
+     27.132,
+     40.183
+    ],
+    "frames": 88
+   }
+  ]
+ },
+ "negative_results": [
+  {
+   "item": "whole-body inertial parameters (PRIME regression route)",
+   "conclusion": "not identifiable with current sensing (no mocap / no fixed base)",
+   "evidence": "prime_identify/IDENTIFIABILITY.md (7-experiment chain)"
+  }
+ ],
+ "model_artifacts": [
+  {
+   "file": "x1_identified.urdf",
+   "patched_body": "base_link",
+   "mass_kg": 3.15196154,
+   "com_m": [
+    0.02255454,
+    0.02409425,
+    -0.01261008
+   ],
+   "inertia_urdf_order": [
+    0.01900623,
+    -0.01917668,
+    0.01034941,
+    0.11025736,
+    0.0067361,
+    0.11126854
+   ],
+   "matches_R9": true,
+   "sha256_12": "00578fa399f4",
+   "source": "spi_identify/export/x1_identified.urdf"
+  },
+  {
+   "file": "xyber_x1_identified.xml",
+   "patched_body": "x1-body",
+   "mass_kg": 3.15196154,
+   "com_m": [
+    0.02255454,
+    0.02409425,
+    -0.01261008
+   ],
+   "diaginertia_kg_m2": [
+    0.013786,
+    0.10878429,
+    0.11796184
+   ],
+   "matches_R9": true,
+   "identified_eigvals": [
+    0.013786,
+    0.108784,
+    0.117962
+   ],
+   "sha256_12": "79bc9abc2cb9",
+   "source": "spi_identify/export/xyber_x1_identified.xml"
+  },
+  {
+   "file": "dr_x1_spi.json",
+   "identified_mass_kg": 3.1519615384257644,
+   "kappa_s": 0.3700928084351175,
+   "matches_R9": true,
+   "sha256_12": "642bb25fbc0b",
+   "source": "spi_identify/export/dr_x1_spi.json"
+  }
+ ],
+ "excluded_legacy_artifacts": [
+  {
+   "file": "prime_identify/results/x1_gmass_anchored.urdf",
+   "what": "URDF with total mass anchored to 37.1 kg (G4 single-dataset era, base_link 6.08 kg)",
+   "why_excluded": "superseded: current evidence is the G6 v2 straight-group mean 35.94 kg (n=7) and pelvis is separately identified by SPI R9; keeping it in the delivery snapshot would mix two inconsistent mass stories"
+  }
+ ]
+}

@@ -22,6 +22,7 @@
 | 2026-09-02 | SPI 集成 + 原生验证 | 辨识 | 仓库改造为专属辨识项目；SPI 流水线 vendor + R1–R7 原生任务：**原生辨识+原生验证闭环 PASS**（R4 参数：质量 3.428 kg、κs 0.396、holdout -68.7%；地板再基线 13.5→13.8） | [2026-09-02_spi_integration.md](2026-09-02_spi_integration.md) |
 | 2026-09-02/03 | 多数据集辨识轮（x1_data 新数据） | 辨识 | 10 条新 walk_diag（270 s，三策略组）入 train/cross 双桶；新增完成标准 5 CROSS-DATASET 与关节级 GATE-J1..J5；**SPI 五项全 PASS**（R9 域内参数：骨盆 3.152 kg、κs 0.370、cross 0.307/13.940≤14.24，T9 TASK_20260903_073 exit 0）；关节 J4/J5 PASS、J1/J2/J3 边际 FAIL（根因量化；post-hoc 修订 T10 改善 knee R² +0.04~0.05 未翻转判定）；GRF 质量 G6 v2 PASS（直行 35.94 kg） | [2026-09-03_multidataset_sysid_report.md](2026-09-03_multidataset_sysid_report.md) |
 | 2026-09-04 | 多 seed 地板标定 | 辨识/标定 | seed2/3 补跑（TASK_20260904_013/014，seed 传递验证生效）：3-seed 地板再基线 holdout 15.0（带宽 1.66 占满至绝对上限，单 seed 地板假 FAIL 实证）/ cross 14.405（带宽 0.21 稳定）；参数 seed 方差量化（骨盆 ±14%、κs 全带内）；R9 判定不变，官方参数维持 seed1（§2.5） | [2026-09-03_multidataset_sysid_report.md §2.5](2026-09-03_multidataset_sysid_report.md) |
+| 2026-09-04 | **辨识方法与结果评审**（事后复算） | 评审 | 对 R9 与门禁体系的事后复算（**参考性，不推翻 T9 判定**）：R-1 开环回放在 clip 内已发散（holdout 平均姿态误差 62.8°→65.3°，比力残差 13.541 vs 零模型 1.42，差 9.5×，代价改善全部来自幅值类通道而 quat/q 反而变差）；R-2 m 与 κs 结构性简并（三 seed 各散 27–29%，m/κs 只散 3.7%）；R-3 三 seed 一致呈质量↓+惯量↑3–9× 的非物理组合；R-4 ACTUATOR 带下沿由 R²=0.58 的 hip_yaw 独撑，按 R²≥0.80 重取带 [0.546,0.706] 后三 seed 的 κs 全部出带；R-5 PHYSICAL 重言 + ACCEL 地板已退化为绝对上限；R-6 关节级悬空前提已被 IDENTIFIABILITY §2.6 证伪；R-7 伪惯量参考点定义。**处置**：暂缓回写惯量/质心、DR 窗口放宽、P0 补基座初速 + 发散诊断 | [2026-09-04_sysid_review.md](2026-09-04_sysid_review.md)（复现：`spi_identify/scripts/review_diag.py`） |
 
 ## 当前有效基准（速查）
 
@@ -29,3 +30,4 @@
 - **原生单数据基准（R4）**：R4 辨识 + R7 冻结复验 PASS（TASK_20260902_034）→ `spi_identify/results/r4_native_identified_params.json`；R4 参数跨策略复验 ratio 0.318（T1）
 - **交叉基准**：F1 v15 参数原生复验 PASS（TASK_20260902_030）
 - κs 跨轮稳定 0.36–0.48（含 3-seed 方差）；骨盆质量 R4 3.43 / F1 3.78 / R9 3.15，seed 方差 ±14%（3.15/3.62/4.21，无动捕质量方向固有不确定度，报告 §2.5）→ 详见 [../sysid_path.md §2 路线 A](../sysid_path.md)
+- ⚠️ **使用 R9 参数前必读** [2026-09-04_sysid_review.md](2026-09-04_sysid_review.md)：事后复算显示 m 与 κs 结构性简并（可辨识量是 **κs/m ≈ 0.113–0.117**，非 m 或 κs 各自），骨盆惯量与质心证据不足（建议暂缓回写，§9）；T9 门禁判定本身不变

@@ -18,6 +18,8 @@
 | **全身惯性参数回归（PRIME 路线）**：无基座线运动传感时原理性不可辨识 | ❌ 已证伪 | 7 实验证据链，`prime_identify/IDENTIFIABILITY.md` |
 | **SPI-Active 主动激励（Stage-2）** | ⏸ 待多行为策略 | `spi_identify/active/` 代码就绪 |
 
+> ⚠️ **2026-09-04 事后复算评审（[docs/rounds/2026-09-04_sysid_review.md](docs/rounds/2026-09-04_sysid_review.md)）**：上表门禁判定不变，但复算显示 SPI 主路线的**开环回放在 clip 窗口内已发散**（holdout 平均基座姿态误差 62.8°→65.3°；比力残差 13.541 比"恒定重力"零模型的 1.42 差 9.5 倍），且 **m 与 κs 结构性简并**（三 seed 各散 27–29%，m/κs 只散 3.7%——可辨识量是 **κs/m ≈ 0.113–0.117**，不是骨盆质量）。**使用 R9 参数或 `output/model/` 工件前请先读该评审 §9（回写处置）与 §10（P0 修复项）。**
+
 现状约束（无动捕、无固定基座工装、仅吊架 + 3 个策略 checkpoint 行走数据）下的完整路径与装备升级开关见 **[docs/sysid_path.md](docs/sysid_path.md)（方案主文档，生效中）**；方法全景与外部方法评级见 **[docs/methods_survey.md](docs/methods_survey.md)（方法库）**。
 
 ## 2. 目录结构
@@ -61,7 +63,13 @@ X1_辨识/
 │
 ├── deploy/sim2real/         ── 实机轮次 runbook（SPI-Active / UAN / PACE）
 ├── X1_infer/                  部署框架（MJCF 模型来源，与 F1 同源）
-└── X1_train/                  远端重训框架（agibot_x1_train，辨识产物替换 URDF/DR）
+├── X1_train/                  远端重训框架（agibot_x1_train，辨识产物替换 URDF/DR）
+│
+├── output/                  ── ★ 顶层输出汇总（单一对外输出口，快照交付物）────
+│   ├── README.md              辨识指标清单 + 全部结果数值 + 工件导航（人读总览）
+│   ├── identified_summary.json  机器可读全量汇总（SPI R9/关节级/GRF/一致性校验）
+│   └── model/                 辨识后模型工件（R9 回写 URDF + MJCF + DR 配置）
+└── scripts/make_output.py      重建 output/（程序化提取，含参数-工件一致性校验）
 ```
 
 ## 3. 快速开始（gradmotion 远端）
@@ -105,6 +113,8 @@ data/raw/ 放入新数据（保持原始文件名）
 | GRF 整机质量估计（多数据集 G6 v2 分组一致性） | `prime_identify/scripts/gm_validate.py` | ✅（直行 35.94 kg；侧移 -14% 方法限制实证） |
 | 惯性参数可辨识性证伪链（7 实验） | `prime_identify/scripts/diag_*.py` | ✅（结论：本传感配置下原理性不可辨识） |
 | SPI-Active 命令优化（FIM + Bézier） | `spi_identify/scripts/run_active.py` | ⏸ 待多行为策略 |
+| 顶层输出汇总生成（指标+结果+模型工件快照，含 R9 一致性校验） | `scripts/make_output.py` → `output/` | ✅ |
+| 辨识结果事后复算（零模型基线／代价反推／seed 简并／证据带敏感性） | `spi_identify/scripts/review_diag.py` → [评审档](docs/rounds/2026-09-04_sysid_review.md) | ⚠️ 参考性结论：R9 证据强度不足，P0 修复项见评审 §10 |
 
 ## 6. 文档导航
 
@@ -115,6 +125,7 @@ data/raw/ 放入新数据（保持原始文件名）
 | 方案·实机 | [deploy/sim2real/](deploy/sim2real/) | 三方案实机 runbook（一轮一计划、一轮一结果） |
 | 实践·台账 | [docs/methods_log.md](docs/methods_log.md) | 方法→脚本→结论，跨轮次沉淀 |
 | 实践·轮次 | [docs/rounds/](docs/rounds/) | 每轮交付快照 + 时间线索引 |
+| 实践·评审 | [docs/rounds/2026-09-04_sysid_review.md](docs/rounds/2026-09-04_sysid_review.md) | R9 与门禁体系的事后复算评审（R-1..R-7 + 交付物处置 + P0 修复优先级） |
 | 历史·归档 | [docs/archive/](docs/archive/) | 三方案早期设计（2026-08-10）+ PRIME 轮交付（2026-08-31）+ SPI 集成轮（2026-09-02）等 |
 | 数据契约 | [data/README.md](data/README.md) | 与 F1 D0–D2 映射、上传约定、质量红线 |
 | 证据链 | [prime_identify/IDENTIFIABILITY.md](prime_identify/IDENTIFIABILITY.md) | 惯性参数不可辨识证据（新数据先过此检查） |
