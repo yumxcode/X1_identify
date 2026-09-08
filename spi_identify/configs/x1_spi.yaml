@@ -154,8 +154,9 @@ kappa_s_range: [0.30, 0.80]
 #                                  度量短程预测误差而非发散速率
 replay:
   base_linvel_mode: "zero"
-  delay_ms: 0.0
-  reset_every_rows: 0
+  # R10（2026-09-08）开启：P0/M-010 诊断结论落地——回放保真度为主导误差源
+  delay_ms: 8.0
+  reset_every_rows: 20
 
 cost:                             # paper Tab.3 (X1: no mocap -> pos/linvel = 0)
   base_pos: 0.0
@@ -171,7 +172,8 @@ cost:                             # paper Tab.3 (X1: no mocap -> pos/linvel = 0)
   # P1-3 通道归一化：各通道除以 nominal 残差尺度后加权（R-1.1：绝对单位下
   # accel 独占 90.2%）。下一轮辨识开启；validate 路径不受影响（阈值语义
   # 在 validation 节）。
-  normalize_channels: false
+  # R10（2026-09-08）开启：修 accel 绝对单位下 90.2% 独占（R-1.1）
+  normalize_channels: true
 
 optimizer:
   n_trials: 200                   # 新数据 clip 少（~7 train），单 trial 更快；
