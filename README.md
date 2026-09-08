@@ -22,7 +22,7 @@
 > 
 > ⚠️ **2026-09-08 新门禁复验（P1V9，TASK_20260908_225）**：P1-4 零模型 ACCEL bar + P2-1 R²≥0.80 过滤带的新门禁语义下，R9 参数复验 **`verdict: FAIL (exit 1)`——ACCEL 13.541 vs bar 2.423（超 5.6×）、ACTUATOR κs 0.370 ∉ [0.546,0.706]；EFFECTIVENESS/PHYSICAL/CROSS-DATASET 三项 PASS**。即评审 R-4/R-5 的代码级确认：**R9 不满足当前门禁体系**（T9 旧门禁历史判定存档不变）；后续再辨识一律以新门禁为准（评审 §13）。
 > 
-> ⚠️ **2026-09-08 R10 再辨识 + R10V 归因（[docs/rounds/2026-09-08_r10_p1fidelity.md](docs/rounds/2026-09-08_r10_p1fidelity.md)）**：开启 P1 保真度三键（延迟 8 ms / 0.2 s multiple shooting / 通道归一）后全量再辨识仍 FAIL 3/5（ACCEL 8.708 vs bar 2.423；ACTUATOR 0.3768 出带）；归因任务证明 **accel 改善 100% 来自回放语义（13.541→8.543，-36.8%）、再辨识零参数增益**（同语义下 R9 参数反超，m–κs 简并干预验证）。**结论**：比力通道残差=接触冲击瞬态（best=零模型 10.6×，bar 3× 不可达），当前传感配置（无动捕/固定基座）下 URDF 惯性参数的"真值级"辨识已到上限——**动捕或固定基座工装为产出更匹配真机 URDF 的必要条件**（`sysid_path.md` §4 路线 A）；官方参数维持 R9，fidelity 语义固化。
+> ⚠️ **2026-09-08 R10 再辨识 + R10V 归因（[docs/rounds/2026-09-08_r10_p1fidelity.md](docs/rounds/2026-09-08_r10_p1fidelity.md)）**：开启 P1 保真度三键（延迟 8 ms / 0.2 s multiple shooting / 通道归一）后全量再辨识仍 FAIL 3/5（ACCEL 8.708 vs bar 2.423；ACTUATOR 0.3768 出带）；归因任务证明 **accel 改善 100% 来自回放语义（13.541→8.543，-36.8%）、再辨识零参数增益**（同语义下 R9 参数反超，m–κs 简并干预验证）。**结论**：比力通道残差=接触冲击瞬态（best=零模型 10.6×，bar 3× 不可达），当前传感配置（无动捕/固定基座）下 URDF 惯性参数的"真值级"辨识已到上限。R10 回写工件落地于 `spi_identify/export/r10_fidelity/`（**非官方**，预测等效 R9）；官方 URDF 维持 R9 回写版（`output/model/`）。**下一步唯一收敛路径 = 路线 A 数据**：采集协议 + 接线清单 + 闭环命令见 [docs/route_a_readiness.md](docs/route_a_readiness.md)。
 
 现状约束（无动捕、无固定基座工装、仅吊架 + 3 个策略 checkpoint 行走数据）下的完整路径与装备升级开关见 **[docs/sysid_path.md](docs/sysid_path.md)（方案主文档，生效中）**；方法全景与外部方法评级见 **[docs/methods_survey.md](docs/methods_survey.md)（方法库）**。
 
