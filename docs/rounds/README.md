@@ -30,6 +30,8 @@
 
 | 2026-09-08 | P1V9 新门禁复验闭环 | 复验 | 账号池恢复（id=45/46）后 §13 单任务闭环（TASK_20260908_225，commit c26a7da）：80 单测全绿 + 数据集重建 + 新门禁验证 → **R9 `verdict: FAIL (exit 1)`，PREDICTION 逐项确认**（ACCEL 13.541 vs bar 2.423、ACTUATOR 0.370 ∉ [0.546,0.706]；EFF/PHYSICAL/CROSS 三项 PASS）= R-4/R-5 代码级确认；T9 旧门禁历史判定不变 | [2026-09-04_sysid_review.md §13](2026-09-04_sysid_review.md) |
 
+| 2026-09-08 | R10：P1 保真度开启后全量再辨识 | 辨识 | TASK_20260908_261（seed1/250 trials，config d10dd71 三键：delay 8ms / MS 0.2s / 通道归一）：新门禁 **FAIL 3/5**（ACCEL 8.708 vs bar 2.423；ACTUATOR κs 0.3768 出带；EFF 0.318 / CROSS 0.495·11.381 PASS）+ 归因任务 R10V（TASK_20260908_285，R9 参数 × fidelity 语义）：**同语义下 R9 参数追平反超（ACCEL 8.543 < 8.708、cross 10.441 < 11.381）——accel 改善 100% 来自回放语义（-36.8%）、再辨识零增益（R-2 简并干预验证）**；ACCEL bar 结构性不可达（冲击瞬态，best=零模型 10.6×）→ 路线 A 必要性最终确认；官方参数维持 R9，fidelity 语义固化 | [2026-09-08_r10_p1fidelity.md](2026-09-08_r10_p1fidelity.md) |
+
 ## 当前有效基准（速查）
 
 - **多数据集基准（现行，R9）**：T8 域内再辨识（TASK_20260903_015）+ **T9 终判五项全 PASS**（TASK_20260903_073，exit 0；判定时地板 14.04/14.24）+ 3-seed 复核全 PASS（MS TASK_20260904_013/014）→ `spi_identify/results/r9_indomain_params.json`；现行地板 holdout 15.0 / cross 14.405（3-seed 再基线 2026-09-04，报告 §2.5）

@@ -123,3 +123,18 @@
 - **运维教训（镜像首拉 vs 死任务判别）**：34.4 GB isaac-gym 镜像在冷节点上首拉 ~68 min 期间 status=3 但日志为零——**区分"慢"与"死"看 podName/commitId 是否已就位**（draft-stuck 签名是 status=0 无 pod）；本任务 10:20 启动、11:28 才出首条日志、11:31 完结（计算本体仅 ~3.5 min）。
 - **预期判定 → 已确认（2026-09-08 TASK_20260908_225）**：R9 在新门禁下 ACCEL FAIL（实测 bar=2.423，比预期 4.26 更严——运行时零模型 RMS 0.808 < 事后估算 1.42）且 ACTUATOR FAIL（0.370 ∉ [0.546,0.706]）——R-4/R-5 代码级确认完成，见上一条。回放保真度键默认 legacy（对已归档 T9 判定无追溯力）。
 - **教训**：跨账号资源耗尽可能发生在任务创建与运行之间（create 成功 ≠ run 有余额），且可中途杀死运行中任务（145）——关键证据任务应在启动后首 5 分钟确认流水线进入计算阶段。
+
+
+## M-012 R10：P1 回放保真度开启后的全量再辨识（2026-09-08）
+
+- **输入**：同 R9 数据（48 train clips + cross 桶）；config `d10dd71` 开启 P1 三键（`delay_ms 8.0` / `reset_every_rows 20` / `normalize_channels true`）
+- **任务**：TASK_20260908_261（seed1 / 250 trials = R9 同预算）；全量日志 `results/remote_logs/R10_TASK_20260908_261_p1fidelity_identify.log`；参数 `results/r10_p1fidelity_params.json`
+- **判定**：新门禁 **FAIL（3/5）**——ACCEL 8.708 vs bar 2.423、ACTUATOR κs 0.3768 ∉ [0.546,0.706]；EFF 0.318 / PHYSICAL / CROSS 0.495·11.381≤14.405 PASS
+- **方法学要点**：`validate_spi.py` 消费 replay 键（L146–151）→ P1V9（全开环）与 R10（8ms+0.2s MS）**验证语义不同不可直接对比**；归因补验 R10V（TASK_20260908_285，R9 参数 × fidelity 语义）；mass_landscape.py **不**消费 replay 键（legacy 诊断，两轮逐位一致）
+- **归因结论（R10V）**：同 fidelity 语义下 R9 参数 ACCEL 8.543 < R10 8.708、cross 10.441 < 11.381、EFF 0.305 < 0.318——**accel 改善（13.541→8.543，-36.8%）100% 来自回放语义、再辨识零增益**（简并鞍面抖动，R-2 最直接干预证据）；两任务 nominal@fidelity 逐位一致（9.531，内部一致性 ✓）
+- **结论**：
+  1. 保真度干预使 nominal 比力 RMS 17.289→9.531（-45%）——R-1"回放保真度主导"获干预验证；
+  2. 0.2 s 重同步下 best 仍为零模型 10.8×（bar 3×）——ACCEL bar 在本传感配置结构性不可达（比力通道=冲击瞬态，R-1a/M-010 互证）；
+  3. κs 0.370→0.377 跨语义不动、双双出带——m–κs 简并（R-2）干预验证；
+  4. 官方参数维持 R9（两集同 FAIL，不满足切换条件）；URDF 回写维持暂缓（评审 §9）
+- **教训**：方法键翻转后，"同指标跨轮对比"先查该指标的计算路径是否消费被翻转的键（本次 validate 消费 replay、landscape 不消费——一个 config 两套语义）
