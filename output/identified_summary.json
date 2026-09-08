@@ -1,6 +1,6 @@
 {
  "snapshot": {
-  "generated_at": "2026-09-04 03:21 UTC",
+  "generated_at": "2026-09-08 03:39 UTC",
   "param_version": "R9 (seed1, TASK_20260903_015) — official, T9 TASK_20260903_073 exit 0",
   "joint_params_version": "T7 (TASK_20260902_222); post-hoc T10 (TASK_20260903_082) revised method, verdict unchanged",
   "report": "docs/rounds/2026-09-03_multidataset_sysid_report.md",
@@ -66,6 +66,30 @@
     "pass": true
    }
   ],
+  "new_gate_revalidation_p1v9": {
+   "task": "TASK_20260908_225 (P1V9, 2026-09-08, commit c26a7da)",
+   "verdict": "FAIL",
+   "exit_code": 1,
+   "accel_rms": 13.541,
+   "accel_bar": 2.423,
+   "zero_model_rms": 0.808,
+   "kappa_s": 0.37,
+   "actuator_band": [
+    0.546,
+    0.706
+   ],
+   "passed_gates": [
+    "EFFECTIVENESS",
+    "PHYSICAL",
+    "CROSS-DATASET"
+   ],
+   "failed_gates": [
+    "ACCEL",
+    "ACTUATOR"
+   ],
+   "note": "R-4/R-5 code-level confirmation; T9 legacy-gate historical verdict stands",
+   "source": "spi_identify/results/remote_logs/P1V9_TASK_20260908_225_validate_newgate.log"
+  },
   "gates_rationale": {
    "EFFECTIVENESS": "holdout cost ratio <= 0.70",
    "PHYSICAL": "m/com/I inside x1_spi.yaml physical box",

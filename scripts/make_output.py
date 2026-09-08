@@ -40,6 +40,7 @@ SEEDS = {
     "seed3": ROOT / "spi_identify/results/seed3_indomain_params.json",
 }
 T9_LOG = ROOT / "spi_identify/results/remote_logs/T9_TASK_20260903_073_final_verdict.log"
+P1V9_LOG = ROOT / "spi_identify/results/remote_logs/P1V9_TASK_20260908_225_validate_newgate.log"
 GRF_JSON = ROOT / "prime_identify/results/gm_validation_multidataset.json"
 EXPORT = ROOT / "spi_identify/export"
 ARTIFACTS = ["x1_identified.urdf", "xyber_x1_identified.xml", "dr_x1_spi.json"]
@@ -49,6 +50,37 @@ NOMINAL_PELVIS = {"mass": 4.3041648,
 URDF_NOMINAL_TOTAL_KG = 35.323          # nominal URDF total (G6 band anchor)
 G6_STRAIGHT_BAND = (32.0, 40.0)         # gm_validate.py G6_STRAIGHT_BAND
 LATERAL_MARKER = "5999model"
+
+
+def parse_p1v9_newgate() -> dict:
+    """Extract the new-gate revalidation (P1V9, TASK_20260908_225) verdict.
+
+    R9 params re-validated under the P1-4 zero-model ACCEL bar and the
+    P2-1 R^2>=0.80-filtered ACTUATOR band (review 2026-09-04 s13; the
+    PREDICTION was ACCEL+ACTUATOR FAIL). Source: archived remote log.
+    """
+    txt = P1V9_LOG.read_text()
+    verdict = re.search(r"\[validate\] verdict: (\w+) \(exit (\d)\)", txt)
+    accel = re.search(
+        r"val accel RMS best=([\d.]+) \(bar=([\d.]+) = zero-model ([\d.]+) x 3\.0",
+        txt)
+    actuator = re.search(
+        r"kappa_s=([\d.]+) vs step-regression band \[([\d.]+), ([\d.]+)\]", txt)
+    if not (verdict and accel and actuator):
+        raise SystemExit("[make_output] cannot parse P1V9 new-gate log — stale?")
+    return {
+        "task": "TASK_20260908_225 (P1V9, 2026-09-08, commit c26a7da)",
+        "verdict": verdict.group(1), "exit_code": int(verdict.group(2)),
+        "accel_rms": float(accel.group(1)), "accel_bar": float(accel.group(2)),
+        "zero_model_rms": float(accel.group(3)),
+        "kappa_s": float(actuator.group(1)),
+        "actuator_band": [float(actuator.group(2)), float(actuator.group(3))],
+        "passed_gates": ["EFFECTIVENESS", "PHYSICAL", "CROSS-DATASET"],
+        "failed_gates": ["ACCEL", "ACTUATOR"],
+        "note": "R-4/R-5 code-level confirmation; T9 legacy-gate historical verdict stands",
+        "source": "spi_identify/results/remote_logs/"
+                  "P1V9_TASK_20260908_225_validate_newgate.log",
+    }
 
 # final-gate thresholds (docs/rounds/2026-09-03_multidataset_sysid_report.md §2.4/§2.5)
 SPI_GATES = {
@@ -167,6 +199,7 @@ def grf_groups(per_file: list[dict]) -> dict:
 
 def main() -> None:
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    p1v9 = parse_p1v9_newgate()
     r9 = json.loads(R9.read_text())
     bp = r9["best_params"]
     base = bp["bodies"]["base"]
@@ -253,6 +286,7 @@ def main() -> None:
             "holdout": r9["holdout"],
             "cross": r9["cross"],
             "five_final_gates": spi_checks,
+            "new_gate_revalidation_p1v9": p1v9,
             "gates_rationale": SPI_GATES,
             "seed_stability": seeds,
             "credibility": {"pelvis_mass": "high (vs nominal; absolute seed spread +/-14%)",
@@ -326,12 +360,15 @@ def main() -> None:
 > 参数版本 **R9**（seed1，T8 TASK_20260903_015 辨识，T9 TASK_20260903_073 正式终判 exit 0）；
 > 完整方法与证据链见 `docs/rounds/2026-09-03_multidataset_sysid_report.md`。
 > 模型工件与 R9 参数一致性校验：**{'✅ 全部一致' if all_match else '❌ 存在不一致，见下表'}**
+> ⚠️ **新门禁复验（P1V9，{p1v9['task']}）：`verdict: {p1v9['verdict']} (exit {p1v9['exit_code']})`**
+> —— ACCEL {p1v9['accel_rms']} vs bar {p1v9['accel_bar']}（零模型 RMS {p1v9['zero_model_rms']}×3）、ACTUATOR κs {p1v9['kappa_s']} ∉ {p1v9['actuator_band']}；
+> EFF/PHYSICAL/CROSS 三项 PASS。**R9 不满足当前门禁体系**（评审 §13，R-4/R-5 代码级确认；T9 旧门禁历史判定存档不变）。
 
 ## 1. 辨识指标清单与结果总览
 
 | 层面 | 辨识指标 | 结果 | 判定 |
 |---|---|---|---|
-| 整机·SPI | 骨盆质量 / 质心 / 惯量张量 | **{mass:.4f} kg**（nominal {NOMINAL_PELVIS['mass']:.4f}）/ com {com} / I 见 §2 | 五项全 PASS（T9 exit 0） |
+| 整机·SPI | 骨盆质量 / 质心 / 惯量张量 | **{mass:.4f} kg**（nominal {NOMINAL_PELVIS['mass']:.4f}）/ com {com} / I 见 §2 | 五项全 PASS（T9 旧门禁存档）；新门禁复验 FAIL（见头部警示） |
 | 整机·SPI | 电机刚度 κ ×4（hip_pitch/hip_rolleyaw/knee/ankle） | {kappa_str} | 域内（域见 `x1_spi.yaml`） |
 | 整机·SPI | 力矩缩放 κs | **{float(bp['kappa_s']):.4f}**（独立证据带 [0.34, 0.71]） | ✅ |
 | 关节·模组 | 串联关节 J_eff / τc / τv / 延迟 / α / k_t（×8 串联 + ×4 并联踝参考） | 延迟 6–9 ms、k_t R²=1.000（12/12）、参数表见 §3 | J4/J5 PASS；J1/J2/J3 边际 FAIL（参考值交付） |

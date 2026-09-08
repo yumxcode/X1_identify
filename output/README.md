@@ -1,16 +1,19 @@
 # X1 辨识输出汇总（顶层交付快照）
 
 > 本目录是全仓库辨识工作的**单一对外输出口**：辨识了哪些指标、结果是多少、辨识后的模型文件是什么。
-> 由 `scripts/make_output.py` 于 **2026-09-04 03:21 UTC** 生成（快照，可再生：`python3 scripts/make_output.py`）。
+> 由 `scripts/make_output.py` 于 **2026-09-08 03:39 UTC** 生成（快照，可再生：`python3 scripts/make_output.py`）。
 > 参数版本 **R9**（seed1，T8 TASK_20260903_015 辨识，T9 TASK_20260903_073 正式终判 exit 0）；
 > 完整方法与证据链见 `docs/rounds/2026-09-03_multidataset_sysid_report.md`。
 > 模型工件与 R9 参数一致性校验：**✅ 全部一致**
+> ⚠️ **新门禁复验（P1V9，TASK_20260908_225 (P1V9, 2026-09-08, commit c26a7da)）：`verdict: FAIL (exit 1)`**
+> —— ACCEL 13.541 vs bar 2.423（零模型 RMS 0.808×3）、ACTUATOR κs 0.37 ∉ [0.546, 0.706]；
+> EFF/PHYSICAL/CROSS 三项 PASS。**R9 不满足当前门禁体系**（评审 §13，R-4/R-5 代码级确认；T9 旧门禁历史判定存档不变）。
 
 ## 1. 辨识指标清单与结果总览
 
 | 层面 | 辨识指标 | 结果 | 判定 |
 |---|---|---|---|
-| 整机·SPI | 骨盆质量 / 质心 / 惯量张量 | **3.1520 kg**（nominal 4.3042）/ com [0.02255454, 0.02409425, -0.01261008] / I 见 §2 | 五项全 PASS（T9 exit 0） |
+| 整机·SPI | 骨盆质量 / 质心 / 惯量张量 | **3.1520 kg**（nominal 4.3042）/ com [0.02255454, 0.02409425, -0.01261008] / I 见 §2 | 五项全 PASS（T9 旧门禁存档）；新门禁复验 FAIL（见头部警示） |
 | 整机·SPI | 电机刚度 κ ×4（hip_pitch/hip_rolleyaw/knee/ankle） | hip_pitch 76.1 / hip_rolleyaw 39.8 / knee 73.1 / ankle 19.8 | 域内（域见 `x1_spi.yaml`） |
 | 整机·SPI | 力矩缩放 κs | **0.3701**（独立证据带 [0.34, 0.71]） | ✅ |
 | 关节·模组 | 串联关节 J_eff / τc / τv / 延迟 / α / k_t（×8 串联 + ×4 并联踝参考） | 延迟 6–9 ms、k_t R²=1.000（12/12）、参数表见 §3 | J4/J5 PASS；J1/J2/J3 边际 FAIL（参考值交付） |

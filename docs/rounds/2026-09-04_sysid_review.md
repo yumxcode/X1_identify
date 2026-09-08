@@ -393,10 +393,18 @@ box_filter(20) 退化为整段平均，绝对值部分受边缘效应影响，�
 
 §8 清单中 P1 全部四项 + P2 全部三项 + R-7 定义修复已落码（commit 43d9fce，80+24 单测；
 关键逻辑均有单测机械验证：零模型 bar 数学、R² 过滤带、通道归一化、Steiner 往返、
-三角不等式）。**远端 validate-only 重跑证据因账号资源耗尽暂缺，标记 PENDING（2026-09-05 终态：5 次尝试——
-127 pypi 超时 / 142·144·155 池内账号无余额 / 145 中途被终止 / 170 本地 keychain 账号 run 被拒，
-号池清空且本地账号无运行余额，全部路径耗尽；两轮共 3 小时等待后再探仍空（第 6/7 次尝试同签名失败，证据 remote_logs/P1V5_*.txt）；审核轮第 8 次探测（2026-09-05 07:10 CST，TASK_20260905_034）仍同签名失败——判定为持久性外部阻塞**；
-预期 R9 在新门禁下 FAIL（ACCEL bar≈4.26 << 13.541；ACTUATOR 0.370 出过滤带），
-与本文 R-4/R-5 结论一致——待资源恢复后 `gm-run remote_sysid.py --validate-only
---params-file=spi_identify/results/r9_indomain_params.json` 一次任务即可闭环。
-config 新键默认 legacy，对已归档判定无追溯力。
+三角不等式）。**远端 validate-only 重跑证据已闭环（2026-09-08，TASK_20260908_225，账号池恢复后 §13 单任务）**：
+80 单测全绿 → 数据集重建（train 130 clips + cross）→ 新门禁验证 → **`verdict: FAIL (exit 1)`，
+PREDICTION 逐项确认**——ACCEL FAIL（best=13.541 vs bar=2.423；运行时零模型 RMS=0.808 比事后
+估算 1.42 更低，bar 更严，13.541 超 bar 5.6×）、ACTUATOR FAIL（κs=0.370 ∉ [0.546,0.706]）；
+EFFECTIVENESS 0.358 / PHYSICAL / CROSS-DATASET 0.307·13.940≤14.405 三项 PASS。即 **R-4/R-5
+的代码级确认：R9 在新门禁下 3/5 PASS、整体 FAIL**；T9 旧门禁历史判定（五项 PASS）不变。
+全量日志 `spi_identify/results/remote_logs/P1V9_TASK_20260908_225_validate_newgate.log`
+（含 validation.json 全文与 mass landscape；任务 10:20 启动、11:31 结束，其中 ~68 min 为
+34.4 GB 镜像首拉，计算本体 ~3.5 min）。
+历史阻塞记录（2026-09-05 终态，留档）：5 次尝试——127 pypi 超时 / 142·144·155 池内账号
+无余额 / 145 中途被终止 / 170 本地 keychain 账号 run 被拒，号池清空且本地账号无运行余额；
+第 6/7/8 次探测（TASK_20260905_032/033/034）同签名失败，证据 remote_logs/P1V5_*.txt。
+回放保真度键（delay_ms 等）默认仍 legacy，对已归档判定无追溯力；本次重跑启用的仅
+P1-4（accel_zero_model_ratio）与 P2-1（actuator_m1_min_r2）门禁语义键（已随 commit 43d9fce
+提交在 x1_spi.yaml validation 段）。

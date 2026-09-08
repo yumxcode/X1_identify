@@ -10,7 +10,7 @@
 
 | 结论 | 状态 | 依据 |
 |---|---|---|
-| **SPI 多数据集辨识（现行基准 R9）**：骨盆 3.152 kg（域内）、κs 0.370、holdout eff 0.358 / 比力 13.541、跨策略 ratio 0.307 / 比力 13.940 —— **五项全 PASS**（T9 exit 0；3-seed 复核全 PASS，地板 15.0/14.405 再基线，§2.5） | ✅ **PASS** | T9 TASK_20260903_073 + MS TASK_20260904_013/014，`spi_identify/results/r9_indomain_params.json` |
+| **SPI 多数据集辨识（现行基准 R9）**：骨盆 3.152 kg（域内）、κs 0.370、holdout eff 0.358 / 比力 13.541、跨策略 ratio 0.307 / 比力 13.940 —— **五项全 PASS**（T9 exit 0；3-seed 复核全 PASS，地板 15.0/14.405 再基线，§2.5）；⚠️ 2026-09-08 新门禁复验 FAIL（见下） | ✅ PASS（旧门禁存档）/ ❌ 新门禁 FAIL | T9 TASK_20260903_073 + MS TASK_20260904_013/014 + P1V9 TASK_20260908_225，`spi_identify/results/r9_indomain_params.json` |
 | **SPI 单数据闭环（R4+R7）**：骨盆 3.428 kg、κs 0.396、四项全过；R4 参数跨策略 ratio 0.318 | ✅ PASS | TASK_20260902_034 / T1 复验 |
 | **F1 v15 交叉基准**：两环境互洽 | ✅ PASS | TASK_20260902_030 |
 | **关节模组辨识（joint_identify）**：延迟 6–9 ms（J4 PASS）、k_t R²=1.000（J5 PASS）；J1 knee R² 0.50 / J2 摩擦项不对称 / J3 hip_roll α 0.831 边际 FAIL（根因量化见报告 §3.2） | ⚠️ 部分 PASS | T9/T10（现 24 单测，T9 时点 19；12 文件语义守卫全过） |
@@ -19,6 +19,8 @@
 | **SPI-Active 主动激励（Stage-2）** | ⏸ 待多行为策略 | `spi_identify/active/` 代码就绪 |
 
 > ⚠️ **2026-09-04 事后复算评审（[docs/rounds/2026-09-04_sysid_review.md](docs/rounds/2026-09-04_sysid_review.md)）**：上表门禁判定不变，但复算显示 SPI 主路线的**开环回放在 clip 窗口内已发散**（holdout 平均基座姿态误差 62.8°→65.3°；比力残差 13.541 比"恒定重力"零模型的 1.42 差 9.5 倍），且 **m 与 κs 结构性简并**（三 seed 各散 27–29%，m/κs 只散 3.7%——可辨识量是 **κs/m ≈ 0.113–0.117**，不是骨盆质量）。**使用 R9 参数或 `output/model/` 工件前请先读该评审 §9（回写处置）与 §10（P0 修复项）。**
+> 
+> ⚠️ **2026-09-08 新门禁复验（P1V9，TASK_20260908_225）**：P1-4 零模型 ACCEL bar + P2-1 R²≥0.80 过滤带的新门禁语义下，R9 参数复验 **`verdict: FAIL (exit 1)`——ACCEL 13.541 vs bar 2.423（超 5.6×）、ACTUATOR κs 0.370 ∉ [0.546,0.706]；EFFECTIVENESS/PHYSICAL/CROSS-DATASET 三项 PASS**。即评审 R-4/R-5 的代码级确认：**R9 不满足当前门禁体系**（T9 旧门禁历史判定存档不变）；后续再辨识一律以新门禁为准（评审 §13）。
 
 现状约束（无动捕、无固定基座工装、仅吊架 + 3 个策略 checkpoint 行走数据）下的完整路径与装备升级开关见 **[docs/sysid_path.md](docs/sysid_path.md)（方案主文档，生效中）**；方法全景与外部方法评级见 **[docs/methods_survey.md](docs/methods_survey.md)（方法库）**。
 
